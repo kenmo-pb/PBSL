@@ -19,7 +19,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   ;- - OS Information
   
   CompilerIf (#PB_Compiler_OS = #PB_OS_Windows)
-    #IsWindowsBuild = #True
     Macro WLMO(_WindowsExpr, _LinuxExpr, _MacExpr, _OtherExpr)
       _WindowsExpr
     EndMacro
@@ -30,7 +29,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
       _WindowsExpr
     EndMacro
   CompilerElse
-    #IsWindowsBuild = #False
     Macro WindowsElse(_WindowsExpr, _ElseExpr)
       _ElseExpr
     EndMacro
@@ -40,7 +38,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   CompilerEndIf
   
   CompilerIf (#PB_Compiler_OS = #PB_OS_Linux)
-    #IsLinuxBuild = #True
     Macro WLMO(_WindowsExpr, _LinuxExpr, _MacExpr, _OtherExpr)
       _LinuxExpr
     EndMacro
@@ -51,7 +48,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
       _LinuxExpr
     EndMacro
   CompilerElse
-    #IsLinuxBuild = #False
     Macro LinuxElse(_LinuxExpr, _ElseExpr)
       _ElseExpr
     EndMacro
@@ -61,7 +57,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   CompilerEndIf
   
   CompilerIf (#PB_Compiler_OS = #PB_OS_MacOS)
-    #IsMacBuild = #True
     Macro WLMO(_WindowsExpr, _LinuxExpr, _MacExpr, _OtherExpr)
       _MacExpr
     EndMacro
@@ -72,7 +67,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
       _MacExpr
     EndMacro
   CompilerElse
-    #IsMacBuild = #False
     Macro MacElse(_MacExpr, _ElseExpr)
       _ElseExpr
     EndMacro
@@ -81,9 +75,28 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     EndMacro
   CompilerEndIf
   
-  #IsUnixBuild = WindowsElse(#False, #True)
+  #IsWindowsBuild = WindowsElse(#True, #False)
+  #IsLinuxBuild   = LinuxElse(#True, #False)
+  #IsMacBuild     = MacElse(#True, #False)
+  #IsUnixBuild    = WindowsElse(#False, #True)
   
   #OSName$ = WLMO("Windows", "Linux", "Mac", "Other")
+  
+  CompilerIf (#IsUnixBuild)
+    Macro UnixElse(_UnixExpr, _ElseExpr)
+      _UnixExpr
+    EndMacro
+    Macro OnUnix(_UnixExpr)
+      _UnixExpr
+    EndMacro
+  CompilerElse
+    Macro UnixElse(_UnixExpr, _ElseExpr)
+      _ElseExpr
+    EndMacro
+    Macro OnUnix(_UnixExpr)
+      ;
+    EndMacro
+  CompilerEndIf
   
   ;-
   ;- - Build Information
@@ -184,6 +197,14 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   #LFLF$    = #LF$ + #LF$
   #CRLFCRLF = #CRLF$ + #CRLF$
   
+  #SP = $20
+  #DQ = $22
+  #SQ = $27
+  
+  #SP$ = Chr(#SP)
+  #DQ$ = Chr(#DQ)
+  #SQ$ = Chr(#SQ)
+  
   #CurrentDirectory$ = "."
   #ParentDirectory$  = ".."
   #HomeDirectory$    = "~"
@@ -210,6 +231,11 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   EndMacro
   Macro BytesToChars(_NumBytes)
     ((_NumBytes) / #CharSize)
+  EndMacro
+  
+  Macro AddString(_List, _String)
+    AddElement(_List)
+    _List = _String
   EndMacro
   
   Macro GetDesktopDirectory()
@@ -286,6 +312,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     XIncludeFile "pb-compatibility.pbi"
     XIncludeFile "math.pbi"
     XIncludeFile "strings.pbi"
+    XIncludeFile "paths.pbi"
     XIncludeFile "date-time.pbi"
     XIncludeFile "color.pbi"
     XIncludeFile "images.pbi"
