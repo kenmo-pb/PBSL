@@ -12,7 +12,7 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
   
   XIncludeFile "common.pbi"
   
-  ;- Path Manipulation
+  ;- - Path Manipulation
   
   Procedure.s EnsurePathSeparator(Path.s)
     If (Path)
@@ -159,7 +159,7 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
   EndProcedure
   
   ;-
-  ;- Locate Files/Folders
+  ;- - File/Folder Information
   
   Macro FolderExists(_Folder)
     (Bool(FileSize(_Folder) = #PB_FileSize_Directory))
@@ -171,6 +171,13 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
   
   Macro FileOrFolderExists(_Path)
     (Bool(FileSize(_Path) <> #PB_FileSize_Missing))
+  EndMacro
+  
+  Macro GetCreatedDate(_File)
+    GetFileDate((_File), #PB_Date_Created)
+  EndMacro
+  Macro GetModifiedDate(_File)
+    GetFileDate((_File), #PB_Date_Modified)
   EndMacro
   
   Procedure.s _GetUserDataPathFormat(Name.s)
@@ -258,50 +265,6 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
       
     CompilerEndIf
     
-    ProcedureReturn (Result)
-  EndProcedure
-  
-  Procedure.s Which(FileName.s)
-    Protected Result.s = ""
-    If (FileName And (Not FindString(FileName, "/")))
-      CompilerIf (#IsWindowsBuild)
-        If (Not FindString(FileName, "\"))
-          If (ExamineEnvironmentPaths())
-            Protected TryPath.s
-            If (GetExtensionPart(FileName) <> "")
-              While (NextEnvironmentPath())
-                TryPath = EnvironmentPath() + FileName
-                If (FileExists(TryPath))
-                  Result = TryPath
-                  Break 1
-                EndIf
-              Wend
-            Else
-              NewList PathExt.s()
-              If (SplitStringToList(GetEnvironmentVariable("PATHEXT"), PathExt(), ";", #True))
-                DeduplicateStringList(PathExt())
-                FileName = RTrim(FileName, ".") + "."
-                While (NextEnvironmentPath())
-                  ForEach (PathExt())
-                    TryPath = EnvironmentPath() + FileName + LTrim(PathExt(), ".")
-                    If (FileExists(TryPath))
-                      Result = TryPath
-                      Break 2
-                    EndIf
-                  Next
-                Wend
-                ClearList(PathExt())
-              EndIf
-            EndIf
-          EndIf
-        EndIf
-      CompilerElseIf (#IsUnixBuild)
-        Protected Output.s = RunProgramOutputHidden("which", FileName)
-        If (Output And FileExists(Output))
-          Result = Output
-        EndIf
-      CompilerEndIf
-    EndIf
     ProcedureReturn (Result)
   EndProcedure
   

@@ -54,6 +54,20 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     (Bool(FindString((_String), (_Substring)) > 0))
   EndMacro
   
+  ;-
+  ;- String Manipulation
+  
+  CompilerIf (PBGTE(640))
+    ; https://www.purebasic.fr/english/viewtopic.php?t=88238
+    Macro UpdateStringLength(_StringVar)
+      _StringVar = PeekS(@_StringVar)
+    EndMacro
+  CompilerElse
+    Macro UpdateStringLength(_StringVar)
+      ;
+    EndMacro
+  CompilerEndIf
+  
   CompilerIf (PBGTE(640)) ; PB 6.40 dropped #PB_String_InPlace because it has side effects, strings are now passed "upward" by-reference!
                           ; https://www.purebasic.fr/english/viewtopic.php?p=650813
     CompilerIf (#False)   ; Confirm whether this approach actually works for PB 6.40+ string library!
@@ -96,8 +110,26 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     EndMacro
   CompilerEndIf
   
-  ;-
-  ;- String Manipulation
+  Macro RemoveSpaces(_String)
+    RemoveString(_String, " ")
+  EndMacro
+  
+  Macro SQuote(_String)
+    #SQ$ + _String + #SQ$
+  EndMacro
+  Macro DQuote(_String)
+    #DQ$ + _String + #DQ$
+  EndMacro
+  Macro Quote(_String)
+    DQuote(_String)
+  EndMacro
+  
+  Macro SDQuote(_String)
+    ReplaceString(_String, #SQ$, #DQ$)
+  EndMacro
+  Macro SDQuoteInPlace(_String)
+    ReplaceStringInPlace(_String, #SQ$, #DQ$)
+  EndMacro
   
   Procedure.s Unquote(Text.s, Character.s = "")
     If (Len(Character) = 1)
@@ -110,6 +142,13 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
       ElseIf ((Left(Text, 1) = #SQ$) And (Right(Text, 1) = #SQ$))
         Text = Mid(Text, 2, Len(Text) - 2)
       EndIf
+    EndIf
+    ProcedureReturn (Text)
+  EndProcedure
+  
+  Procedure.s QuoteIfSpaces(Text.s, QuoteEmptyString.i = #False)
+    If (FindString(Text, " ") Or (QuoteEmptyString And (Text = "")))
+      Text = DQuote(Text)
     EndIf
     ProcedureReturn (Text)
   EndProcedure

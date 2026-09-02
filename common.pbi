@@ -142,8 +142,8 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   CompilerEndIf
   
   #PB_Compiler_Examples            = #PB_Compiler_Home     + WindowsElse("Examples\", "examples/")
-  #PB_Compiler_ExamplesSourcesData = #PB_Compiler_Examples + WindowsElse("Sources\Data\", "sources/data/")
-  #PB_Compiler_Examples3DData      = #PB_Compiler_Examples + WindowsElse("3D\Data\", "3d/data/")
+  #PB_Compiler_ExamplesSourcesData = #PB_Compiler_Examples + WindowsElse("Sources\Data\", "sources/Data/")
+  #PB_Compiler_Examples3DData      = #PB_Compiler_Examples + WindowsElse("3D\Data\", "3d/Data/")
   
   ;-
   ;- - PB Version Information
@@ -163,6 +163,28 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   
   ;-
   ;- - Subsystem Information
+  
+  CompilerIf (#IsLinuxBuild)
+    CompilerIf (PBGTE(540))
+      #IsGTK2Subsystem = Subsystem("gtk2")
+      #IsGTK3Subsystem = Bool(Not #IsGTK2Subsystem)
+    CompilerElseIf (PBGTE(520))
+      #IsGTK3Subsystem = Subsystem("gtk3")
+      #IsGTK2Subsystem = Bool(Not #IsGTK3Subsystem)
+    CompilerElse
+      #IsGTK2Subsystem = #True
+      #IsGTK3Subsystem = #False
+    CompilerEndIf
+    CompilerIf (PBGTE(570))
+      #IsQTSubsystem = Subsystem("qt")
+    CompilerElse
+      #IsQTSubsystem = #False
+    CompilerEndIf
+  CompilerElse
+    #IsGTK2Subsystem = #False
+    #IsGTK3Subsystem = #False
+    #IsQTSubsystem   = #False
+  CompilerEndIf
   
   CompilerIf (Not Defined(PB_Compiler_Wayland, #PB_Constant))
     #PB_Compiler_Wayland = #False
@@ -194,16 +216,25 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   
   #EOL$ = WindowsElse(#CRLF$, #LF$)
   
-  #LFLF$    = #LF$ + #LF$
+  CompilerIf (#IsUnicodeBuild)
+    #EL  = $2026
+    #EL$ = Chr(#EL)
+  CompilerElse
+    #EL$ = "..."
+  CompilerEndIf
+  
+  #LFLF$    = #LF$   + #LF$
   #CRLFCRLF = #CRLF$ + #CRLF$
   
-  #SP = $20
-  #DQ = $22
-  #SQ = $27
-  
+  #SP  = $20
+  #DQ  = $22
+  #SQ  = $27
   #SP$ = Chr(#SP)
   #DQ$ = Chr(#DQ)
   #SQ$ = Chr(#SQ)
+  
+  #NBSP  = $A0
+  #NBSP$ = Chr(#NBSP)
   
   #CurrentDirectory$ = "."
   #ParentDirectory$  = ".."
@@ -217,11 +248,80 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     #PB_MessageRequester_Warning = WindowsElse(#MB_ICONWARNING,     #Null)
     #PB_MessageRequester_Error   = WindowsElse(#MB_ICONERROR,       #Null)
   CompilerEndIf
-  #PB_MessageRequester_Question = WindowsElse(#MB_ICONQUESTION, #PB_MessageRequester_Info)
+  #PB_MessageRequester_Question = WindowsElse(#MB_ICONQUESTION, #PB_MessageRequester_Warning)
   
   #Localhost = "localhost"
   #LocalIPv4 = "127.0.0.1"
   #LocalIPv6 = "::1"
+  
+  ;-
+  ;- - Common Structures
+  
+  Structure AsciiArray
+    a.a[0]
+  EndStructure
+  Structure ByteArray
+    b.b[0]
+  EndStructure
+  Structure CharacterArray
+    c.c[0]
+  EndStructure
+  Structure DoubleArray
+    d.d[0]
+  EndStructure
+  Structure FloatArray
+    f.f[0]
+  EndStructure
+  Structure IntegerArray
+    i.i[0]
+  EndStructure
+  Structure LongArray
+    l.l[0]
+  EndStructure
+  Structure QuadArray
+    q.q[0]
+  EndStructure
+  ;Structure StringArray
+  ;  s.s[0]
+  ;EndStructure
+  Structure UnicodeArray
+    u.u[0]
+  EndStructure
+  Structure WordArray
+    w.w[0]
+  EndStructure
+  
+  Structure AnyArray
+    StructureUnion
+      a.a[0]
+      b.b[0]
+      c.c[0]
+      d.d[0]
+      f.f[0]
+      i.i[0]
+      l.l[0]
+      q.q[0]
+      ;s.s[0]
+      u.u[0]
+      w.w[0]
+    EndStructureUnion
+  EndStructure
+  
+  Structure AnyType
+    StructureUnion
+      a.a
+      b.b
+      c.c
+      d.d
+      f.f
+      i.i
+      l.l
+      q.q
+      ;s.s
+      u.u
+      w.w
+    EndStructureUnion
+  EndStructure
   
   ;-
   ;- - Common Macros
@@ -289,6 +389,11 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   EndProcedure
   
   ;-
+  ;- - Declares
+  
+  Declare.s Which(FileName.s)
+  
+  ;-
   ;- - OS Includes
   
   CompilerIf (#IsWindowsBuild)
@@ -314,12 +419,19 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     XIncludeFile "strings.pbi"
     XIncludeFile "paths.pbi"
     XIncludeFile "date-time.pbi"
+    XIncludeFile "file-io.pbi"
+    XIncludeFile "process.pbi"
     XIncludeFile "color.pbi"
     XIncludeFile "images.pbi"
+    XIncludeFile "window-desktop.pbi"
+    XIncludeFile "gadgets.pbi"
+    XIncludeFile "requesters.pbi"
   CompilerEndIf
   
   CompilerIf (#PBSL_IncludeAll)
+    XIncludeFile "gadget-sizes.pbi"
     XIncludeFile "network.pbi"
+    XIncludeFile "single-instance.pbi"
   CompilerEndIf
   
 CompilerEndIf

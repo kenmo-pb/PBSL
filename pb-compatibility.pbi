@@ -24,14 +24,18 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
     #PB_Compiler_Backend = #PB_Backend_Asm
   CompilerEndIf
   
-  #IsAsmBuild = Bool(#PB_Compiler_Backend = #PB_Backend_Asm)
-  #IsCBuild   = Bool(#PB_Compiler_Backend = #PB_Backend_C)
+  #IsAsmBackend = Bool(#PB_Compiler_Backend = #PB_Backend_Asm)
+  #IsCBackend   = Bool(#PB_Compiler_Backend = #PB_Backend_C)
   
   CompilerIf (Not Defined(PB_2DDrawing_NativeText, #PB_Constant))
     #PB_2DDrawing_NativeText = #Null
   CompilerEndIf
   CompilerIf (Not Defined(PB_2DDrawing_FastText, #PB_Constant))
     #PB_2DDrawing_FastText = #Null
+  CompilerEndIf
+  
+  CompilerIf (Not Defined(PB_FontRequester_Effects, #PB_Constant))
+    #PB_FontRequester_Effects = 0
   CompilerEndIf
   
   #PB_Date_LocalTime = 0
