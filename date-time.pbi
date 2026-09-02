@@ -55,6 +55,14 @@ CompilerIf (Not Defined(_PBSL_DateTime_Included, #PB_Constant))
     Date()
   EndMacro
   
+  Macro NowUTC()
+    DateUTC()
+  EndMacro
+  
+  Macro CurrentYear()
+    Year(Date())
+  EndMacro
+  
   ;-
   ;- - Date/Time Procedures
   

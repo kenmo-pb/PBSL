@@ -422,6 +422,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     XIncludeFile "file-io.pbi"
     XIncludeFile "process.pbi"
     XIncludeFile "color.pbi"
+    XIncludeFile "drawing.pbi"
     XIncludeFile "images.pbi"
     XIncludeFile "window-desktop.pbi"
     XIncludeFile "gadgets.pbi"
@@ -430,6 +431,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   
   CompilerIf (#PBSL_IncludeAll)
     XIncludeFile "gadget-sizes.pbi"
+    XIncludeFile "vector-drawing.pbi"
     XIncludeFile "network.pbi"
     XIncludeFile "single-instance.pbi"
   CompilerEndIf
