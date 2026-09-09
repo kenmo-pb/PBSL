@@ -11,9 +11,8 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
   CompilerEndIf
   
   XIncludeFile "common.pbi"
-  XIncludeFile "paths.pbi"
   
-  ;- Process Macros
+  ;- - Process Macros
   
   Macro WriteProgramEOF(_Program)
     WriteProgramData(_Program, #PB_Program_Eof, 0)
@@ -27,7 +26,48 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
   EndMacro
   
   ;-
-  ;- Process Procedures
+  ;- - Environment Variables
+  
+  Global NewList _PBSL_EnvironmentPath.s()
+  
+  Procedure.i ExamineEnvironmentPaths()
+    ClearList(_PBSL_EnvironmentPath())
+    
+    CompilerIf (#IsWindowsBuild)
+      SplitStringToList(GetEnvironmentVariable("PATH"), _PBSL_EnvironmentPath(), ";", #True)
+      ForEach (_PBSL_EnvironmentPath())
+        _PBSL_EnvironmentPath() = NormalizePathSeparators(_PBSL_EnvironmentPath())
+      Next
+    CompilerElse
+      SplitStringToList(GetEnvironmentVariable("PATH"), _PBSL_EnvironmentPath(), ":", #True)
+    CompilerEndIf
+    
+    ForEach (_PBSL_EnvironmentPath())
+      _PBSL_EnvironmentPath() = EnsurePathSeparator(_PBSL_EnvironmentPath())
+    Next
+    DeduplicateStringList(_PBSL_EnvironmentPath())
+    ResetList(_PBSL_EnvironmentPath())
+    ProcedureReturn (ListSize(_PBSL_EnvironmentPath()))
+  EndProcedure
+  
+  Procedure.i NextEnvironmentPath()
+    If (NextElement(_PBSL_EnvironmentPath()))
+      ProcedureReturn (#True)
+    Else
+      ProcedureReturn (#False)
+    EndIf
+  EndProcedure
+  
+  Procedure.s EnvironmentPath()
+    If (ListIndex(_PBSL_EnvironmentPath()) >= 0)
+      ProcedureReturn (_PBSL_EnvironmentPath())
+    Else
+      ProcedureReturn ("")
+    EndIf
+  EndProcedure
+  
+  ;-
+  ;- - Process Procedures
   
   Procedure.s RunProgramOutput(ProgramName.s, Parameter.s = "", WorkingDirectory.s = "", Flags.i = #Null)
     Protected Result.s = ""
@@ -257,6 +297,13 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.i GetSystemBootTimestamp()
+    CompilerIf (#IsLinuxBuild)
+      ProcedureReturn (ParseDate("%yyyy-%mm-%dd %hh:%ii:%ss", RunProgramOutputHidden("uptime", "-s", "")))
+    CompilerEndIf
+    ProcedureReturn (0) ; unknown boot time
+  EndProcedure
+  
   Procedure.s ProgramParametersString()
     Protected Result.s = ""
     Protected N.i = CountProgramParameters()
@@ -270,6 +317,32 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
       Next i
     EndIf
     ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i ProgramParametersToList(List StrList.s())
+    ClearList(StrList())
+    Protected N.i = CountProgramParameters()
+    If (N > 0)
+      Protected i.i
+      For i = 0 To (N-1)
+        AddString(StrList(), ProgramParameter(i))
+      Next i
+    EndIf
+    ProcedureReturn (N)
+  EndProcedure
+  
+  Procedure.i ProgramParametersToArray(Array StrArray.s(1))
+    Protected N.i = CountProgramParameters()
+    If (N > 0)
+      Dim StrArray.s(N-1)
+      Protected i.i
+      For i = 0 To (N-1)
+        StrArray(i) = ProgramParameter(i)
+      Next i
+    Else
+      Dim StrArray.s(0)
+    EndIf
+    ProcedureReturn (N)
   EndProcedure
   
 CompilerEndIf

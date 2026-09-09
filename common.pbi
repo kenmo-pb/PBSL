@@ -145,6 +145,12 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   #PB_Compiler_ExamplesSourcesData = #PB_Compiler_Examples + WindowsElse("Sources\Data\", "sources/Data/")
   #PB_Compiler_Examples3DData      = #PB_Compiler_Examples + WindowsElse("3D\Data\", "3d/Data/")
   
+  CompilerIf (#PB_Shortcut_Command = #PB_Shortcut_Control)
+    #CommandShortcutIsControl = #True
+  CompilerElse
+    #CommandShortcutIsControl = #False
+  CompilerEndIf
+  
   ;-
   ;- - PB Version Information
   
@@ -333,6 +339,16 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     ((_NumBytes) / #CharSize)
   EndMacro
   
+  Macro StartsWith(_String, _Prefix)
+    (Bool(Left((_String), Len(_Prefix)) = (_Prefix)))
+  EndMacro
+  Macro EndsWith(_String, _Suffix)
+    (Bool(Right((_String), Len(_Suffix)) = (_Suffix)))
+  EndMacro
+  Macro Contains(_String, _Substring)
+    (Bool(FindString((_String), (_Substring)) > 0))
+  EndMacro
+  
   Macro AddString(_List, _String)
     AddElement(_List)
     _List = _String
@@ -389,6 +405,33 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   EndProcedure
   
   ;-
+  ;- - PB Imports
+  
+  CompilerIf (Not Defined(PB_Object_EnumerateStart, #PB_Procedure))
+    CompilerIf (#IsWindowsBuild)
+      Import ""
+        PB_Object_EnumerateStart(Object.i)
+        PB_Object_EnumerateNext(Object.i, *ID.Integer)
+        PB_Object_EnumerateAbort(Object.i)
+        PB_Object_Count(Objects.i)
+        PB_Window_Objects.i
+        PB_Gadget_GetRootWindow.i(GadgetID.i)
+      EndImport
+    CompilerElse
+      ImportC ""
+        PB_Object_EnumerateStart(Object.i)
+        PB_Object_EnumerateNext(Object.i, *ID.Integer)
+        PB_Object_EnumerateAbort(Object.i)
+        PB_Object_Count(Objects.i)
+        PB_Window_Objects.i
+        CompilerIf (Not #IsMacBuild)
+          PB_Gadget_GetRootWindow.i(GadgetID.i)
+        CompilerEndIf
+      EndImport
+    CompilerEndIf
+  CompilerEndIf
+  
+  ;-
   ;- - Declares
   
   Declare.s Which(FileName.s)
@@ -410,12 +453,13 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   ;- - Library Includes
   
   CompilerIf (Not Defined(PBSL_IncludeAll, #PB_Constant))
-    #PBSL_IncludeAll = #True
+    #PBSL_IncludeAll = #False
   CompilerEndIf
   
   CompilerIf (#True)
     XIncludeFile "pb-compatibility.pbi"
     XIncludeFile "math.pbi"
+    XIncludeFile "lists-maps.pbi"
     XIncludeFile "strings.pbi"
     XIncludeFile "paths.pbi"
     XIncludeFile "date-time.pbi"
@@ -427,12 +471,21 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     XIncludeFile "window-desktop.pbi"
     XIncludeFile "gadgets.pbi"
     XIncludeFile "requesters.pbi"
+    XIncludeFile "preferences.pbi"
   CompilerEndIf
   
   CompilerIf (#PBSL_IncludeAll)
+    XIncludeFile "os-version.pbi"
     XIncludeFile "gadget-sizes.pbi"
+    XIncludeFile "list-requester.pbi"
+    XIncludeFile "scale-image.pbi"
     XIncludeFile "vector-drawing.pbi"
+    XIncludeFile "scan-folder.pbi"
+    XIncludeFile "string-builder.pbi"
+    XIncludeFile "console.pbi"
     XIncludeFile "network.pbi"
+    XIncludeFile "json.pbi"
+    XIncludeFile "packer.pbi"
     XIncludeFile "single-instance.pbi"
   CompilerEndIf
   

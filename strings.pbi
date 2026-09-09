@@ -14,6 +14,29 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
   
   ;- - String Constants
   
+  #DegreeSign  = $B0
+  #DegreeSign$ = Chr(#DegreeSign)
+  
+  #Euro  = $20AC
+  #Euro$ = Chr(#Euro)
+  
+  #UpwardsWhiteArrow         = $21E7
+  #UpwardsWhiteArrow$        = Chr(#UpwardsWhiteArrow)
+  #UpwardsWhiteArrowFromBar  = $21EA
+  #UpwardsWhiteArrowFromBar$ = Chr(#UpwardsWhiteArrowFromBar)
+  #UpArrowhead               = $2303
+  #UpArrowhead$              = Chr(#UpArrowhead)
+  #PlaceOfInterestSign       = $2318
+  #PlaceOfInterestSign$      = Chr(#PlaceOfInterestSign)
+  #OptionKey                 = $2325
+  #OptionKey$                = Chr(#OptionKey)
+  
+  #MacShift$    = #UpwardsWhiteArrow$
+  #MacCapsLock$ = #UpwardsWhiteArrowFromBar$
+  #MacControl$  = #UpArrowhead$
+  #MacCommand$  = #PlaceOfInterestSign$
+  #MacOption$   = #OptionKey$
+  
   #Unicode_Codepoint_Min = $0000
   #Unicode_Codepoint_Max = $10FFFF
   
@@ -21,6 +44,27 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
   #UTF16_HighSurrogate_Max = $DBFF
   #UTF16_LowSurrogate_Min  = $DC00
   #UTF16_LowSurrogate_Max  = $DFFF
+  
+  #VS15  = $FE0E
+  #VS15$ = Chr(#VS15) ; Text Variant
+  #VS16  = $FE0F
+  #VS16$ = Chr(#VS16) ; Emoji Variant
+  
+  #BOM   = $FEFF
+  #BOM$  = Chr(#BOM)
+  #NBOM  = $FFFE
+  #NBOM$ = Chr(#NBOM)
+  
+  #ReplacementChar  = $FFFD
+  #ReplacementChar$ = Chr(#ReplacementChar)
+  
+  Global Dim _PBSL_StrBool.s((2)-1)
+  _PBSL_StrBool(0) = "False"
+  _PBSL_StrBool(1) = "True"
+  
+  Macro StrBool(_Expr)
+    _PBSL_StrBool(Bool(_Expr))
+  EndMacro
   
   ;-
   ;- - Hex Representation
@@ -42,31 +86,13 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
   EndMacro
   
   ;-
-  ;- - String Searching
+  ;- - String Manipulation
   
-  Macro StartsWith(_String, _Prefix)
-    (Bool(Left((_String), Len(_Prefix)) = (_Prefix)))
-  EndMacro
-  Macro EndsWith(_String, _Suffix)
-    (Bool(Right((_String), Len(_Suffix)) = (_Suffix)))
-  EndMacro
-  Macro Contains(_String, _Substring)
-    (Bool(FindString((_String), (_Substring)) > 0))
-  EndMacro
+  Declare.s ChrU(Value.i)
   
-  ;-
-  ;- String Manipulation
-  
-  CompilerIf (PBGTE(640))
-    ; https://www.purebasic.fr/english/viewtopic.php?t=88238
-    Macro UpdateStringLength(_StringVar)
-      _StringVar = PeekS(@_StringVar)
-    EndMacro
-  CompilerElse
-    Macro UpdateStringLength(_StringVar)
-      ;
-    EndMacro
-  CompilerEndIf
+  Macro FindStringNoCase(_String, _StringToFind, _StartPosition = 1)
+    FindString(_String, _StringToFind, (_StartPosition), #PB_String_NoCase)
+  EndMacro
   
   CompilerIf (PBGTE(640)) ; PB 6.40 dropped #PB_String_InPlace because it has side effects, strings are now passed "upward" by-reference!
                           ; https://www.purebasic.fr/english/viewtopic.php?p=650813
@@ -131,6 +157,31 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     ReplaceStringInPlace(_String, #SQ$, #DQ$)
   EndMacro
   
+  Procedure.s UQuote(String.s, Double.i, Heavy.i = #False) ; Unicode Quote
+    CompilerIf (#IsUnicodeBuild)
+      If (Heavy)
+        If (Double)
+          String = ChrU($275D) + String + ChrU($275E)
+        Else
+          String = ChrU($275B) + String + ChrU($275C)
+        EndIf
+      Else
+        If (Double)
+          String = ChrU($201C) + String + ChrU($201D)
+        Else
+          String = ChrU($2018) + String + ChrU($2019)
+        EndIf
+      EndIf
+    CompilerElse
+      If (Double)
+        String = Quote(String)
+      Else
+        String = SQuote(String)
+      EndIf
+    CompilerEndIf
+    ProcedureReturn (String)
+  EndProcedure
+  
   Procedure.s Unquote(Text.s, Character.s = "")
     If (Len(Character) = 1)
       If ((Left(Text, 1) = Character) And (Right(Text, 1) = Character))
@@ -153,8 +204,176 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     ProcedureReturn (Text)
   EndProcedure
   
+  Procedure.s Plural(N.i, Singular.s, Multiple.s = "")
+    If (N = 1)
+      ProcedureReturn (Str(N) + " " + Singular)
+    Else
+      If (Multiple = "")
+        Multiple = Singular + "s"
+      EndIf
+      ProcedureReturn (Str(N) + " " + Multiple)
+    EndIf
+  EndProcedure
+  
+  Procedure.s RepeatString(String.s, N.i)
+    Protected Result.s = ""
+    If (N >= 1)
+      Protected Bytes.i = StringByteLength(String)
+      If (Bytes >= 1)
+        Result = Space(N * Bytes / SizeOf(CHARACTER))
+        Protected i.i
+        For i = 0 To (N-1)
+          CopyMemory(@String, @Result + i * Bytes, Bytes)
+        Next i
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i FindStringOccurrence(String.s, StringToFind.s, Occurrence.i, Mode.i = #PB_String_CaseSensitive)
+    Protected Result.i = 0
+    Protected Found.i  = 0
+    If (Mode = #PB_String_NoCase)
+      String = LCase(String)
+      StringToFind = LCase(StringToFind)
+    EndIf
+    Protected i.i = 1
+    While (Found < Occurrence)
+      i = FindString(String, StringToFind, i, #PB_String_CaseSensitive)
+      If (i)
+        Found + 1
+        If (Found = Occurrence)
+          Result = i
+          Break
+        Else
+          i + Len(StringToFind)
+        EndIf
+      Else
+        Break
+      EndIf
+    Wend
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i FindLastOccurrence(String.s, StringToFind.s, Mode.i = #PB_String_CaseSensitive)
+    Protected Result.i = 0
+    If (Mode = #PB_String_NoCase)
+      String = LCase(String)
+      StringToFind = LCase(StringToFind)
+    EndIf
+    Protected i.i = CountString(String, StringToFind)
+    If (i > 0)
+      Result = FindStringOccurrence(String, StringToFind, i, #PB_String_CaseSensitive)
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s Before(String.s, Suffix.s, Occurrence.i = 1)
+    Protected Result.s
+    If (String And Suffix)
+      Protected i.i = FindStringOccurrence(String, Suffix, Occurrence)
+      If (i)
+        Result = Left(String, i-1)
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s After(String.s, Prefix.s, Occurrence.i = 1)
+    Protected Result.s
+    If (String And Prefix)
+      Protected i.i = FindStringOccurrence(String, Prefix, Occurrence)
+      If (i)
+        Result = Mid(String, i + Len(Prefix))
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s Between(String.s, Prefix.s, Suffix.s)
+    Protected Result.s
+    String = After(String, Prefix)
+    Result = Before(String, Suffix)
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i IsWhitespaceCharacter(Codepoint.i)
+    Select (Codepoint)
+      Case #SP, #TAB, #CR, #LF
+        ProcedureReturn (#True)
+      Case #NUL
+        ProcedureReturn (#True)
+    EndSelect
+    ProcedureReturn (#False)
+  EndProcedure
+  
+  Procedure.i IsWhitespaceString(String.s)
+    Protected Result.i = #True
+    Protected *C.CHARACTER = @String
+    While (*C\c)
+      If (Not IsWhitespaceCharacter(*C\c))
+        Result = #False
+        Break
+      EndIf
+      *C + SizeOf(CHARACTER)
+    Wend
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s LTrimWhitespace(String.s)
+    Protected *C.CHARACTER = @String
+    While (*C\c)
+      If (Not IsWhitespaceCharacter(*C\c))
+        ProcedureReturn (PeekS(*C))
+      EndIf
+      *C + SizeOf(CHARACTER)
+    Wend
+    ProcedureReturn ("")
+  EndProcedure
+  
+  Procedure.s TrimWhitespace(String.s)
+    Protected *Start.CHARACTER = @String
+    While (#True)
+      If ((*Start\c = #NUL) Or (Not IsWhitespaceCharacter(*Start\c)))
+        Break
+      EndIf
+      *Start + SizeOf(CHARACTER)
+    Wend
+    If (*Start\c <> #NUL)
+      Protected *Stop.CHARACTER = *Start
+      Protected *C.CHARACTER = *Start
+      While (*C\c)
+        If (Not IsWhitespaceCharacter(*C\c))
+          *Stop = *C
+        EndIf
+        *C + SizeOf(CHARACTER)
+      Wend
+      ProcedureReturn (PeekS(*Start, BytesToChars(*Stop - *Start) + 1))
+    EndIf
+    ProcedureReturn ("")
+  EndProcedure
+  
   ;-
   ;- - String Buffers
+  
+  Procedure.i IsStandardStringFormat(StringFormat.i)
+    Select (StringFormat)
+      Case #PB_Ascii, #PB_UTF8, #PB_Unicode
+        ProcedureReturn (#True)
+    EndSelect
+    ProcedureReturn (#False)
+  EndProcedure
+  
+  Procedure.i IsExtendedStringFormat(StringFormat.i)
+    CompilerIf (#PB_Unicode <> #PB_UTF16)
+      CompilerWarning "[" + #PB_Compiler_Filename + "] " + #PB_Compiler_Procedure + " assumes Unicode = UTF16"
+    CompilerEndIf
+    Select (StringFormat)
+      Case #PB_Ascii, #PB_UTF8, #PB_Unicode, #PB_UTF16BE, #PB_UTF32, #PB_UTF32BE
+        ProcedureReturn (#True)
+    EndSelect
+    ProcedureReturn (#False)
+  EndProcedure
   
   Procedure.i NullTerminatorBytes(StringFormat.i)
     Select (StringFormat)
@@ -168,8 +387,131 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     ProcedureReturn (0)
   EndProcedure
   
+  Procedure.i StringByteLengthN(String.s, Format.i = #InternalStringFormat, NumNulls.i = 1)
+    Protected Result.i = 0
+    If (NumNulls >= 0)
+      Format = MapPBDefault(Format, #InternalStringFormat)
+      If (IsStandardStringFormat(Format))
+        Result = StringByteLength(String, Format) + (NumNulls * NullTerminatorBytes(Format))
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i StringBuffer(String.s, Format.i = #InternalStringFormat, NumNulls.i = 1)
+    Protected *Buffer = #Null
+    If (NumNulls >= 0)
+      Format = MapPBDefault(Format, #InternalStringFormat)
+      If (IsStandardStringFormat(Format))
+        Protected Bytes.i = StringByteLengthN(String, Format, NumNulls)
+        If (Bytes > 0)
+          *Buffer = AllocateMemory(Bytes)
+          If (*Buffer)
+            PokeS(*Buffer, String, -1, Format | #PB_String_NoZero)
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (*Buffer)
+  EndProcedure
+  
+  CompilerIf (Not Defined(Ascii, #PB_Function))
+    CompilerIf (Not Defined(Ascii, #PB_Procedure))
+      Procedure.i Ascii(String.s)
+        ProcedureReturn (StringBuffer(String, #PB_Ascii, 1))
+      EndProcedure
+    CompilerEndIf
+  CompilerEndIf
+  CompilerIf (Not Defined(UTF8, #PB_Function))
+    CompilerIf (Not Defined(UTF8, #PB_Procedure))
+      Procedure.i UTF8(String.s)
+        ProcedureReturn (StringBuffer(String, #PB_UTF8, 1))
+      EndProcedure
+    CompilerEndIf
+  CompilerEndIf
+  CompilerIf (Not Defined(Unicode, #PB_Function))
+    CompilerIf (Not Defined(Unicode, #PB_Procedure))
+      Procedure.i Unicode(String.s)
+        ProcedureReturn (StringBuffer(String, #PB_Unicode, 1))
+      EndProcedure
+    CompilerEndIf
+  CompilerEndIf
+  
+  ;-
+  ;- - String Lists/Maps
+  
+  Procedure.s ListToString(List StrList.s(), BetweenEach.s = #LF$, BeforeEach.s = "", AfterEach.s = "")
+    Protected Result.s = ""
+    
+    PushListPosition(StrList())
+    ForEach (StrList())
+      If (ListIndex(StrList()) > 0)
+        Result + BetweenEach
+      EndIf
+      Result + BeforeEach
+      Result + StrList()
+      Result + AfterEach
+    Next
+    PopListPosition(StrList())
+    
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i DeduplicateStringList(List StrList.s())
+    Protected Result.i = 0
+    NewMap Found.i()
+    ForEach StrList()
+      If (FindMapElement(Found(), StrList()))
+        DeleteElement(StrList())
+        Result + 1
+      Else
+        AddMapElement(Found(), StrList(), #PB_Map_NoElementCheck)
+      EndIf
+    Next
+    ClearMap(Found())
+    FreeMap(Found())
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i SplitStringToList(String.s, List StrList.s(), Delimiter.s, ExcludeEmpty.i = #False)
+    Protected Result.i = 0
+    ClearList(StrList())
+    If (String And Delimiter)
+      Protected N.i = 1 + CountString(String, Delimiter)
+      Protected i.i
+      For i = 1 To N
+        AddString(StrList(), StringField(String, i, Delimiter))
+        If (ExcludeEmpty And (StrList() = ""))
+          DeleteElement(StrList())
+        EndIf
+      Next i
+      Result = ListSize(StrList())
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i StringListToArray(List StrList.s(), Array StrArray.s(1))
+    Protected N.i = ListSize(StrList())
+    If (N > 0)
+      Dim StrArray(N-1)
+      ForEach (StrList())
+        StrArray(ListIndex(StrList())) = StrList()
+      Next
+    Else
+      Dim StrArray(0)
+    EndIf
+    ProcedureReturn (N)
+  EndProcedure
+  
   ;-
   ;- - Unicode Handling
+  
+  Macro TextVariant(_CharStr)
+    RTrim(RTrim((_CharStr), #VS15$), #VS16$) + #VS15$
+  EndMacro
+  Macro EmojiVariant(_CharStr)
+    RTrim(RTrim((_CharStr), #VS15$), #VS16$) + #VS16$
+  EndMacro
   
   Procedure.i IsUTF8ContinuationByte(Byte.i)
     ProcedureReturn (Bool((Byte & %11000000) = %10000000))
@@ -273,6 +615,22 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     ProcedureReturn (PeekCodepoint(@String, #InternalStringFormat))
   EndProcedure
   
+  Procedure.s ChrU(Value.i)
+    CompilerIf (#IsUnicodeBuild)
+      If (Value > $FFFF)
+        Protected Result.s = "  "
+        Value = (Value - $10000)
+        PokeU(@Result + 0, #UTF16_HighSurrogate_Min + (Value >> 10) & $03FF)
+        PokeU(@Result + 2, #UTF16_LowSurrogate_Min  + (Value >>  0) & $03FF)
+        ProcedureReturn (Result)
+      Else
+        ProcedureReturn (Chr(Value))
+      EndIf
+    CompilerElse
+      ProcedureReturn (Chr(Value))
+    CompilerEndIf
+  EndProcedure
+  
   Procedure.i RequiredUTF8Bytes(Codepoint.i)
     If ((Codepoint >= #Unicode_Codepoint_Min) And (Codepoint <= #Unicode_Codepoint_Max))
       If (Codepoint <= $7F)
@@ -316,6 +674,225 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
       EndIf
     EndIf
     ProcedureReturn (RequiredBytes)
+  EndProcedure
+  
+  ;-
+  ;- - Pattern Matching / Glob
+  
+  Procedure.i _StringMatchesPattern(*String.CHARACTER, *Pattern.CHARACTER)
+    Protected Result.i = #True
+    While (#True)
+      Select (*Pattern\c)
+        Case '?'
+          If (*String\c = #NUL)
+            Result = #False
+            Break
+          EndIf
+        Case '*'
+          *Pattern + SizeOf(CHARACTER)
+          Result = #False
+          While (#True)
+            If (_StringMatchesPattern(*String, *Pattern))
+              Result = #True
+              Break 2
+            EndIf
+            If (*String\c = #NUL)
+              Break 2
+            EndIf
+            *String + SizeOf(CHARACTER)
+          Wend
+        Default
+          If (*String\c <> *Pattern\c)
+            Result = #False
+            Break
+          EndIf
+          If (*Pattern\c = #NUL)
+            Break
+          EndIf
+      EndSelect
+      *String  + SizeOf(CHARACTER)
+      *Pattern + SizeOf(CHARACTER)
+    Wend
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i StringMatchesPattern(String.s, Pattern.s, CaseInsensitive.i = #False)
+    ; Pattern supports
+    ;   '?' for exactly 1 character
+    ;   '*' for any number of characters (including 0!)
+    If (CaseInsensitive)
+      Protected LString.s  = LCase(String)
+      Protected LPattern.s = LCase(Pattern)
+      ProcedureReturn (_StringMatchesPattern(@LString, @LPattern))
+    Else
+      ProcedureReturn (_StringMatchesPattern(@String, @Pattern))
+    EndIf
+  EndProcedure
+  
+  Procedure.i StringMatchesPatternAny(String.s, PatternList.s, CaseInsensitive.i = #False, PatternDelimiter.s = ";")
+    Protected Result.i = #False
+    If (PatternList And PatternDelimiter)
+      Protected N.i = 1 + CountString(PatternList, PatternDelimiter)
+      Protected i.i
+      For i = 1 To N
+        Protected Pattern.s = StringField(PatternList, i, PatternDelimiter)
+        Pattern = Trim(Pattern)
+        If (Pattern)
+          If (StringMatchesPattern(String, Pattern, CaseInsensitive))
+            Result = #True
+            Break
+          EndIf
+        EndIf
+      Next i
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i StringMatchesPatternAll(String.s, PatternList.s, CaseInsensitive.i = #False, PatternDelimiter.s = ";")
+    Protected Result.i = #False
+    If (PatternList And PatternDelimiter)
+      Protected N.i = 1 + CountString(PatternList, PatternDelimiter)
+      Protected i.i
+      For i = 1 To N
+        Protected Pattern.s = StringField(PatternList, i, PatternDelimiter)
+        Pattern = Trim(Pattern)
+        If (Pattern)
+          Result = #True
+          If (Not StringMatchesPattern(String, Pattern, CaseInsensitive))
+            Result = #False
+            Break
+          EndIf
+        EndIf
+      Next i
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  ;-
+  ;- - Iterating Strings
+  
+  Prototype PBSL_IterateStringCallback(String.s, UserData.i)
+  
+  Enumeration ; Flags for the Interate procedures
+    #Iterate_ExcludeBlank      = $0001
+    #Iterate_ExcludeWhitespace = $0002
+  EndEnumeration
+  
+  Procedure.i IterateStringList(List StrList.s(), Callback.PBSL_IterateStringCallback, UserData.i = #Null, Flags.i = #PB_Default, ExcludePrefix.s = "")
+    Protected Result.i = 0
+    
+    If (Flags = #PB_Default)
+      Flags = #Null
+    EndIf
+    If (Flags & #Iterate_ExcludeWhitespace)
+      Flags | #Iterate_ExcludeBlank
+    EndIf
+    
+    PushListPosition(StrList())
+    ForEach (StrList())
+      If ((Not (Flags & #Iterate_ExcludeBlank)) Or (StrList() <> ""))
+        If ((Not (Flags & #Iterate_ExcludeWhitespace)) Or (TrimWhitespace(StrList()) <> ""))
+          If ((ExcludePrefix = "") Or (Left(LTrimWhitespace(StrList()), Len(ExcludePrefix)) <> ExcludePrefix))
+            If (Callback)
+              Callback(StrList(), UserData)
+            EndIf
+            Result + 1
+          EndIf
+        EndIf
+      EndIf
+    Next
+    PopListPosition(StrList())
+    
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i IterateStringFields(String.s, Separator.s, Callback.PBSL_IterateStringCallback, UserData.i = #Null, Flags.i = #PB_Default, ExcludePrefix.s = "")
+    Protected Result.i = 0
+    
+    If (Flags = #PB_Default)
+      Flags = #Null
+    EndIf
+    If (Flags & #Iterate_ExcludeWhitespace)
+      Flags | #Iterate_ExcludeBlank
+    EndIf
+    
+    If (String And Separator)
+      Protected N.i = 1 + CountString(String, Separator)
+      Protected i.i
+      For i = 1 To N
+        Protected Field.s = StringField(String, i, Separator)
+        If ((Not (Flags & #Iterate_ExcludeBlank)) Or (Field <> ""))
+          If ((Not (Flags & #Iterate_ExcludeWhitespace)) Or (TrimWhitespace(Field) <> ""))
+            If ((ExcludePrefix = "") Or (Left(LTrimWhitespace(Field), Len(ExcludePrefix)) <> ExcludePrefix))
+              If (Callback)
+                Callback(Field, UserData)
+              EndIf
+              Result + 1
+            EndIf
+          EndIf
+        EndIf
+      Next
+    EndIf
+    
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i IterateStringsFromFile(File.i, Callback.PBSL_IterateStringCallback, UserData.i = #Null, Flags.i = #PB_Default, ExcludePrefix.s = "")
+    Protected Result.i = 0
+    
+    If (Flags = #PB_Default)
+      Flags = #Null
+    EndIf
+    If (Flags & #Iterate_ExcludeWhitespace)
+      Flags = Flags | #Iterate_ExcludeBlank
+    EndIf
+    
+    Protected SpecificFormat.i
+    If (Loc(File) = 0)
+      Select (ReadStringFormat(File))
+        Case #PB_UTF8
+          SpecificFormat = #PB_UTF8
+        Case #PB_Unicode
+          SpecificFormat = #PB_Unicode
+        Default
+          SpecificFormat = -1
+      EndSelect
+    EndIf
+    
+    Protected Line.s
+    While (Not Eof(File))
+      If (SpecificFormat >= 0)
+        Line = ReadString(File, SpecificFormat)
+      Else
+        Line = ReadString(File)
+      EndIf
+      If ((Not (Flags & #Iterate_ExcludeBlank)) Or (Line <> ""))
+        If ((Not (Flags & #Iterate_ExcludeWhitespace)) Or (TrimWhitespace(Line) <> ""))
+          If ((ExcludePrefix = "") Or (Left(LTrimWhitespace(Line), Len(ExcludePrefix)) <> ExcludePrefix))
+            If (Callback)
+              Callback(Line, UserData)
+            EndIf
+            Result + 1
+          EndIf
+        EndIf
+      EndIf
+    Wend
+    
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i IterateStringsFromFilePath(FilePath.s, Callback.PBSL_IterateStringCallback, UserData.i = #Null, Flags.i = #PB_Default, ExcludePrefix.s = "")
+    Protected Result.i = 0
+    
+    If (FilePath)
+      Protected FN.i = ReadFile(#PB_Any, FilePath)
+      If (FN)
+        Result = IterateStringsFromFile(FN, Callback, UserData, Flags, ExcludePrefix)
+        CloseFile(FN)
+      EndIf
+    EndIf
+    
+    ProcedureReturn (Result)
   EndProcedure
   
   ;-

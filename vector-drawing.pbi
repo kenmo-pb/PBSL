@@ -12,7 +12,31 @@ CompilerIf (Not Defined(_PBSL_VectorDrawing_Included, #PB_Constant))
   
   XIncludeFile "common.pbi"
   
-  ;- Vector Drawing Procedures
+  ;- - Vector Drawing Macros
+  
+  Macro StartPrinterVectorDrawing(_Unit = #PB_Unit_Point)
+    StartVectorDrawing(PrinterVectorOutput(_Unit))
+  EndMacro
+  
+  Macro StartImageVectorDrawing(_Image, _Unit = #PB_Unit_Pixel)
+    StartVectorDrawing(ImageVectorOutput((_Image), (_Unit)))
+  EndMacro
+  
+  Macro StartCanvasVectorDrawing(_CanvasGadget, _Unit = #PB_Unit_Pixel)
+    StartVectorDrawing(CanvasVectorOutput((_CanvasGadget), (_Unit)))
+  EndMacro
+  
+  Macro StartPDFVectorDrawing(_File, _Width, _Height, _Unit = #PB_Unit_Point)
+    StartVectorDrawing(PdfVectorOutput(_File, (_Width), (_Height), (_Unit)))
+  EndMacro
+  
+  ;-
+  ;- - Vector Drawing Procedures
+  
+  Procedure ClearVectorOutput(RGBA.i)
+    VectorSourceColor(RGBA)
+    FillVectorOutput()
+  EndProcedure
   
   Procedure AddPathPartialCircle(x.d, y.d, Radius.d, StartDegreesCW.d, EndDegreesCW.d)
     StartDegreesCW - 90.0

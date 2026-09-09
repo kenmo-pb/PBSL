@@ -27,6 +27,10 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   #IsAsmBackend = Bool(#PB_Compiler_Backend = #PB_Backend_Asm)
   #IsCBackend   = Bool(#PB_Compiler_Backend = #PB_Backend_C)
   
+  CompilerIf (Not Defined(PB_Compiler_Optimizer, #PB_Constant))
+    #PB_Compiler_Optimizer = #False
+  CompilerEndIf
+  
   CompilerIf (Not Defined(PB_2DDrawing_NativeText, #PB_Constant))
     #PB_2DDrawing_NativeText = #Null
   CompilerEndIf
@@ -40,6 +44,20 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   
   #PB_Date_LocalTime = 0
   #PB_Date_UTC       = 1
+  
+  ;-
+  ;- - Compatibility Macros
+  
+  CompilerIf (PBGTE(640))
+    ; https://www.purebasic.fr/english/viewtopic.php?t=88238
+    Macro UpdateStringLength(_StringVar)
+      _StringVar = PeekS(@_StringVar)
+    EndMacro
+  CompilerElse
+    Macro UpdateStringLength(_StringVar)
+      ;
+    EndMacro
+  CompilerEndIf
   
   ;-
   ;- - Compatibility Procedures

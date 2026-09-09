@@ -206,8 +206,6 @@ CompilerIf (Not Defined(_PBSL_GadgetSizes_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
-  Declare.i GetHWNDBorderSize(hWnd.i)
-  
   Procedure.i GadgetBorderSize(Gadget.i)
     Protected Result.i = 0
     CompilerIf (#IsWindowsBuild)
