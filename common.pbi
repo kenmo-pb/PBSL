@@ -410,7 +410,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   ;- - Library Includes
   
   CompilerIf (Not Defined(PBSL_IncludeAll, #PB_Constant))
-    #PBSL_IncludeAll = #False
+    #PBSL_IncludeAll = #True
   CompilerEndIf
   
   CompilerIf (#True)

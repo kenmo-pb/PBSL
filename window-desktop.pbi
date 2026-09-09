@@ -58,7 +58,25 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
   EndProcedure
   
   ;-
+  ;- - Window Macros
+  
+  Macro ShowWindow(_Window)
+    HideWindow((_Window), #False)
+  EndMacro
+  
+  ;-
   ;- - Window Procedures
+  
+  Procedure.i StandardWindowFlags(Resizable.i = #False, Hidden.i = #False)
+    Protected Result.i = #PB_Window_SystemMenu | #PB_Window_ScreenCentered | #PB_Window_MinimizeGadget
+    If (Resizable)
+      Result | (#PB_Window_SizeGadget | #PB_Window_MaximizeGadget)
+    EndIf
+    If (Hidden)
+      Result | #PB_Window_Invisible
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
   
   Procedure EnsureGadgetListOpen()
     Static DummyWindow.i = #Null

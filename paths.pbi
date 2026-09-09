@@ -11,6 +11,7 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
   CompilerEndIf
   
   XIncludeFile "common.pbi"
+  XIncludeFile "strings.pbi"
   
   ;- - Path Manipulation
   

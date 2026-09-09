@@ -257,5 +257,20 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.s ProgramParametersString()
+    Protected Result.s = ""
+    Protected N.i = CountProgramParameters()
+    If (N > 0)
+      Protected i.i
+      For i = 0 To (N-1)
+        If (i > 0)
+          Result + " "
+        EndIf
+        Result + QuoteIfSpaces(ProgramParameter(i), #True)
+      Next i
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
 CompilerEndIf
 ;-

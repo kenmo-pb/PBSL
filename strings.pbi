@@ -269,6 +269,10 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.i AscU(String.s)
+    ProcedureReturn (PeekCodepoint(@String, #InternalStringFormat))
+  EndProcedure
+  
   Procedure.i RequiredUTF8Bytes(Codepoint.i)
     If ((Codepoint >= #Unicode_Codepoint_Min) And (Codepoint <= #Unicode_Codepoint_Max))
       If (Codepoint <= $7F)

@@ -26,6 +26,20 @@ CompilerIf (Not Defined(_PBSL_Gadgets_Included, #PB_Constant))
   ;-
   ;- - Gadget Macros
   
+  Macro MoveGadget(_Gadget, _x, _y)
+    ResizeGadget((_Gadget), (_x), (_y), #PB_Ignore, #PB_Ignore)
+  EndMacro
+  Macro SetGadgetSize(_Gadget, _Width, _Height)
+    ResizeGadget((_Gadget), #PB_Ignore, #PB_Ignore, (_Width), (_Height))
+  EndMacro
+  
+  Macro GadgetExtentX(_Gadget)
+    (GadgetX(_Gadget) + GadgetWidth(_Gadget))
+  EndMacro
+  Macro GadgetExtentY(_Gadget)
+    (GadgetY(_Gadget) + GadgetHeight(_Gadget))
+  EndMacro
+  
   Macro GadgetRequiredWidth(_Gadget)
     (GadgetWidth((_Gadget), #PB_Gadget_RequiredSize))
   EndMacro
@@ -61,6 +75,27 @@ CompilerIf (Not Defined(_PBSL_Gadgets_Included, #PB_Constant))
     CompilerEndIf
     SetActiveGadget(Gadget)
   EndProcedure
+  
+  CompilerIf (#IsLinuxBuild)
+    CompilerIf (Not Defined(gtk_entry_set_alignment, #PB_Procedure))
+      ImportC ""
+        gtk_entry_set_alignment(*entry, xalign.f)
+      EndImport
+    CompilerEndIf
+  CompilerEndIf
+  
+  Procedure CenterStringGadget(Gadget.i)
+    ; https://www.purebasic.fr/english/viewtopic.php?p=642136
+    CompilerIf (#IsWindowsBuild)
+      SetWindowLongPtr_(GadgetID(Gadget), #GWL_STYLE, (GetWindowLongPtr_(GadgetID(Gadget), #GWL_STYLE) & ~#ES_RIGHT) | #ES_CENTER)
+      InvalidateRect_(GadgetID(Gadget), 0, #True)
+    CompilerElseIf (#IsLinuxBuild)
+      gtk_entry_set_alignment(GadgetID(Gadget), 0.5)
+    CompilerElseIf (#IsMacBuild)
+      CocoaMessage(0, GadgetID(Gadget), "setAlignment:", #NSCenterTextAlignment)
+    CompilerEndIf
+  EndProcedure
+  
   
   
 CompilerEndIf
