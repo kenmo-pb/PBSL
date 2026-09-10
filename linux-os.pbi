@@ -3,14 +3,11 @@
 ; +---------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_LinuxOS_Included, #PB_Constant))
   #_PBSL_LinuxOS_Included = #True
-  
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
   
   CompilerIf (#IsLinuxBuild)
     
@@ -21,10 +18,10 @@ CompilerIf (Not Defined(_PBSL_LinuxOS_Included, #PB_Constant))
       ; On Linux, launching executable from file explorer seems to default its CWD to user's home.
       ; This will adjust it to the executable's directory, if it makes sense (eg. not in TEMP folder via PB IDE!)
       ;
-      If (GetCurrentDirectory() <> GetPathPart(ProgramFilename()))
-        If (GetPathPart(ProgramFilename()) <> GetTemporaryDirectory())
+      If (GetCurrentDirectory() <> GetProgramDirectory())
+        If (GetProgramDirectory() <> GetTemporaryDirectory())
           If (GetCurrentDirectory() = GetHomeDirectory())
-            SetCurrentDirectory(GetPathPart(ProgramFilename()))
+            SetCurrentDirectory(GetProgramDirectory())
           EndIf
         EndIf
       EndIf

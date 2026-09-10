@@ -3,18 +3,14 @@
 ; +-------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_MacOS_Included, #PB_Constant))
   #_PBSL_MacOS_Included = #True
   
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
-  
   CompilerIf (#IsMacBuild)
     
-    ;-
     ;- - Mac Constants
     #AppleQuarantineAttribute = "com.apple.quarantine"
     

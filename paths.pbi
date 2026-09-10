@@ -3,14 +3,11 @@
 ; +------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
   #_PBSL_Paths_Included = #True
-  
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
   
   ;- - Path Manipulation
   
@@ -521,10 +518,6 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
     CompilerElse
       ProcedureReturn (ProgramFilename())
     CompilerEndIf
-  EndProcedure
-  
-  Procedure.s GetProgramDirectory()
-    ProcedureReturn (GetPathPart(ProgramFilename()))
   EndProcedure
   
   Procedure.s FindResourcePath(ResourceName.s)

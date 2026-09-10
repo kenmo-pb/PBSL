@@ -3,15 +3,11 @@
 ; +----------------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
   #_PBSL_SingleInstance_Included = #True
-  
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
-  XIncludeFile "window-desktop.pbi"
   
   ;- - Single Instance Constants
   #_PBSL_InstanceMethod_None         = $00

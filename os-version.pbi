@@ -1,16 +1,13 @@
-﻿; +---------------------------------------+
-; | PureBasic Standard Library - TEMPLATE |
-; +---------------------------------------+
+﻿; +----------------------------------------+
+; | PureBasic Standard Library - OSVersion |
+; +----------------------------------------+
 
 ;-
-CompilerIf (Not Defined(_PBSL_TEMPLATE_Included, #PB_Constant))
-  #_PBSL_TEMPLATE_Included = #True
-  
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   XIncludeFile "common.pbi"
+CompilerEndIf
+CompilerIf (Not Defined(_PBSL_OSVersion_Included, #PB_Constant))
+  #_PBSL_OSVersion_Included = #True
   
   ;- - OS Version Procedures  
   

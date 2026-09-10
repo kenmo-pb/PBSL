@@ -3,28 +3,28 @@
 ; +------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_Color_Included, #PB_Constant))
   #_PBSL_Color_Included = #True
-  
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
   
   ;- - Color Constants
   
   #RGBMask   = $00FFFFFF
+  #RGBAMask  = $FFFFFFFF
   #AlphaMask = $FF000000
   
-  #RedOpaque     = #Red     | #AlphaMask
-  #GreenOpaque   = #Green   | #AlphaMask
-  #BlueOpaque    = #Blue    | #AlphaMask
-  #CyanOpaque    = #Cyan    | #AlphaMask
-  #MagentaOpaque = #Magenta | #AlphaMask
-  #YellowOpaque  = #Yellow  | #AlphaMask
-  #BlackOpaque   = #Black   | #AlphaMask
-  #WhiteOpaque   = #White   | #AlphaMask
+  #OpaqueAlpha = #AlphaMask
+  
+  #RedOpaque     = #Red     | #OpaqueAlpha
+  #GreenOpaque   = #Green   | #OpaqueAlpha
+  #BlueOpaque    = #Blue    | #OpaqueAlpha
+  #CyanOpaque    = #Cyan    | #OpaqueAlpha
+  #MagentaOpaque = #Magenta | #OpaqueAlpha
+  #YellowOpaque  = #Yellow  | #OpaqueAlpha
+  #BlackOpaque   = #Black   | #OpaqueAlpha
+  #WhiteOpaque   = #White   | #OpaqueAlpha
   
   Enumeration ; ColorFormats for the Compose procedures
     #ColorFormat_Integer = 0
@@ -46,29 +46,29 @@ CompilerIf (Not Defined(_PBSL_Color_Included, #PB_Constant))
   EndProcedure
   
   Procedure.i Opaque(Color.i)
-    ProcedureReturn ((Color & #RGBMask) | #AlphaMask)
+    ProcedureReturn ((Color & #RGBMask) | #OpaqueAlpha)
   EndProcedure
   
   Procedure.i SwapRGBOrder(Color.i)
     ProcedureReturn (RGBA(Blue(Color), Green(Color), Red(Color), Alpha(Color)))
   EndProcedure
   
-  Procedure.i Gray(Level.i, Alpha.i = 0)
+  Procedure.i Gray(Level.i, Alpha.i = $00)
     Level = (Level & $FF)
     Alpha = (Alpha & $FF)
     ProcedureReturn (RGBA(Level, Level, Level, Alpha))
   EndProcedure
   
-  Procedure.i RandomGray(Alpha.i = 0)
+  Procedure.i RandomGray(Alpha.i = $00)
     ProcedureReturn (Gray(Random($FF), Alpha))
   EndProcedure
   
-  Procedure.i RandomColor(Alpha.i = 0)
+  Procedure.i RandomColor(Alpha.i = $00)
     Alpha = (Alpha & $FF)
     ProcedureReturn (Random(#White) | (Alpha << 24))
   EndProcedure
   
-  Procedure.i RandomBasicColor(Alpha.i = 0)
+  Procedure.i RandomBasicColor(Alpha.i = $00)
     Alpha = (Alpha & $FF)
     ProcedureReturn (RGBA(Random(1) * $FF, Random(1) * $FF, Random(1) * $FF, Alpha))
   EndProcedure
@@ -95,7 +95,7 @@ CompilerIf (Not Defined(_PBSL_Color_Included, #PB_Constant))
   Procedure.s ComposeRGB(RGBColor.i, ColorFormat.i = #ColorFormat_HexCSS)
     Protected Result.s = ""
     
-    RGBColor = RGBColor & $00FFFFFF
+    RGBColor = RGBColor & #RGBMask
     Select (ColorFormat)
       Case #ColorFormat_HexPB
         Result = "$" + Hex24(RGBColor)
@@ -113,20 +113,20 @@ CompilerIf (Not Defined(_PBSL_Color_Included, #PB_Constant))
   Procedure.s ComposeRGBA(RGBAColor.i, ColorFormat.i = #ColorFormat_HexCSS)
     Protected Result.s = ""
     
-    RGBAColor = RGBAColor & $FFFFFFFF
+    RGBAColor = RGBAColor & #RGBAMask
     Select (ColorFormat)
       Case #ColorFormat_HexPB
         Result = "$" + Hex32(RGBAColor)
       Case #ColorFormat_HexCSS
         If (#True) ; move AA to the end, after #RRGGBB
-          Result = "#" + Hex24(SwapRGBOrder(RGBAColor) & $00FFFFFF) + Hex8(Alpha(RGBAColor))
+          Result = "#" + Hex24(SwapRGBOrder(RGBAColor) & #RGBMask) + Hex8(Alpha(RGBAColor))
         Else
           Result = "#" + Hex32(SwapRGBOrder(RGBAColor))
         EndIf
       Case #ColorFormat_RGBComponents
         Result = "RGBA(" + Str(Red(RGBAColor)) + ", " + Str(Green(RGBAColor)) + ", " + Str(Blue(RGBAColor)) + ", " + Str(Alpha(RGBAColor)) + ")"
       Default ;Case #ColorFormat_Integer
-        Result = StrU(RGBAColor & $FFFFFFFF)
+        Result = StrU(RGBAColor & #RGBAMask)
     EndSelect
     
     ProcedureReturn (Result)
@@ -138,6 +138,8 @@ CompilerIf (Not Defined(_PBSL_Color_Included, #PB_Constant))
     Text = LCase(RemoveSpaces(Text))
     Select (Text)
         
+      Case ""
+        Result = #Black
       Case "black"
         Result = #Black
       Case "red"

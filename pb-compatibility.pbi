@@ -3,14 +3,11 @@
 ; +-----------------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   #_PBSL_PBCompatibility_Included = #True
-  
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
   
   ;- - Compatibility Constants
   
@@ -44,20 +41,6 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   
   #PB_Date_LocalTime = 0
   #PB_Date_UTC       = 1
-  
-  ;-
-  ;- - Compatibility Macros
-  
-  CompilerIf (PBGTE(640))
-    ; https://www.purebasic.fr/english/viewtopic.php?t=88238
-    Macro UpdateStringLength(_StringVar)
-      _StringVar = PeekS(@_StringVar)
-    EndMacro
-  CompilerElse
-    Macro UpdateStringLength(_StringVar)
-      ;
-    EndMacro
-  CompilerEndIf
   
   ;-
   ;- - Compatibility Procedures

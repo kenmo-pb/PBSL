@@ -3,23 +3,20 @@
 ; +-------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
   #_PBSL_Images_Included = #True
   
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
-  
-  ;- Image Constants
+  ;- - Image Constants
   
   #JPEGQualityMinimum = 0
   #JPEGQualityMaximum = 10
   #JPEGQualityDefault = 7  ; as of PB 6.40
   
   ;-
-  ;- Image Macros
+  ;- - Image Macros
   
   Macro UseJPEGCodec()
     UseJPEGImageDecoder()
@@ -44,7 +41,7 @@ CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
   EndMacro
   
   ;-
-  ;- Image Procedures
+  ;- - Image Procedures
   
   Procedure.i IsImageAnimated(Image.i)
     CompilerIf (PBGTE(560))

@@ -3,14 +3,11 @@
 ; +------------------------------------------+
 
 ;-
+CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
+  XIncludeFile "common.pbi"
+CompilerEndIf
 CompilerIf (Not Defined(_PBSL_ScaleImage_Included, #PB_Constant))
   #_PBSL_ScaleImage_Included = #True
-  
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
   
   ;- - ScaleImage Constants  
   
@@ -242,7 +239,7 @@ CompilerIf (Not Defined(_PBSL_ScaleImage_Included, #PB_Constant))
   EndProcedure
   
   ;-
-  ;- ScaleImage Helper Procedures
+  ;- - ScaleImage Helper Procedures
   
   Procedure AlignImage(Image.i, Width.i, Height.i, AlignmentFlags.i = #ScaleImage_TopLeft, DestinationImage.i = #ScaleImage_Overwrite, BackgroundColor.i = #White)
     ProcedureReturn (ScaleImage(Image, Width, Height, #ScaleImage_Align | AlignmentFlags, DestinationImage, BackgroundColor))

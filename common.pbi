@@ -10,12 +10,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     CompilerError "PBSL requires PureBasic 5.10 or newer"
   CompilerEndIf
   
-  CompilerIf (#PB_Compiler_IsMainFile)
-    EnableExplicit
-  CompilerEndIf
-  
-  XIncludeFile "common.pbi"
-  
   ;- - OS Information
   
   CompilerIf (#PB_Compiler_OS = #PB_OS_Windows)
@@ -349,9 +343,24 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     (Bool(FindString((_String), (_Substring)) > 0))
   EndMacro
   
+  CompilerIf (PBGTE(640))
+    ; https://www.purebasic.fr/english/viewtopic.php?t=88238
+    Macro UpdateStringLength(_StringVar)
+      _StringVar = PeekS(@_StringVar)
+    EndMacro
+  CompilerElse
+    Macro UpdateStringLength(_StringVar)
+      ;
+    EndMacro
+  CompilerEndIf
+  
   Macro AddString(_List, _String)
     AddElement(_List)
     _List = _String
+  EndMacro
+  
+  Macro GetProgramDirectory()
+    GetPathPart(ProgramFilename())
   EndMacro
   
   Macro GetDesktopDirectory()
@@ -432,21 +441,16 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   CompilerEndIf
   
   ;-
-  ;- - Declares
-  
-  Declare.s Which(FileName.s)
-  
-  ;-
   ;- - OS Includes
   
   CompilerIf (#IsWindowsBuild)
-    XIncludeFile "windows-os.pbi"
+    IncludeFile "windows-os.pbi"
   CompilerEndIf
   CompilerIf (#IsLinuxBuild)
-    XIncludeFile "linux-os.pbi"
+    IncludeFile "linux-os.pbi"
   CompilerEndIf
   CompilerIf (#IsMacBuild)
-    XIncludeFile "mac-os.pbi"
+    IncludeFile "mac-os.pbi"
   CompilerEndIf
   
   ;-
@@ -457,36 +461,36 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   CompilerEndIf
   
   CompilerIf (#True)
-    XIncludeFile "pb-compatibility.pbi"
-    XIncludeFile "math.pbi"
-    XIncludeFile "lists-maps.pbi"
-    XIncludeFile "strings.pbi"
-    XIncludeFile "paths.pbi"
-    XIncludeFile "date-time.pbi"
-    XIncludeFile "file-io.pbi"
-    XIncludeFile "process.pbi"
-    XIncludeFile "color.pbi"
-    XIncludeFile "drawing.pbi"
-    XIncludeFile "images.pbi"
-    XIncludeFile "window-desktop.pbi"
-    XIncludeFile "gadgets.pbi"
-    XIncludeFile "requesters.pbi"
-    XIncludeFile "preferences.pbi"
+    IncludeFile "pb-compatibility.pbi"
+    IncludeFile "math.pbi"
+    IncludeFile "lists-maps.pbi"
+    IncludeFile "strings.pbi"
+    IncludeFile "paths.pbi"
+    IncludeFile "date-time.pbi"
+    IncludeFile "file-io.pbi"
+    IncludeFile "process.pbi"
+    IncludeFile "color.pbi"
+    IncludeFile "drawing.pbi"
+    IncludeFile "images.pbi"
+    IncludeFile "window-desktop.pbi"
+    IncludeFile "gadgets.pbi"
+    IncludeFile "requesters.pbi"
+    IncludeFile "preferences.pbi"
   CompilerEndIf
   
   CompilerIf (#PBSL_IncludeAll)
-    XIncludeFile "os-version.pbi"
-    XIncludeFile "gadget-sizes.pbi"
-    XIncludeFile "list-requester.pbi"
-    XIncludeFile "scale-image.pbi"
-    XIncludeFile "vector-drawing.pbi"
-    XIncludeFile "scan-folder.pbi"
-    XIncludeFile "string-builder.pbi"
-    XIncludeFile "console.pbi"
-    XIncludeFile "network.pbi"
-    XIncludeFile "json.pbi"
-    XIncludeFile "packer.pbi"
-    XIncludeFile "single-instance.pbi"
+    IncludeFile "os-version.pbi"
+    IncludeFile "gadget-sizes.pbi"
+    IncludeFile "list-requester.pbi"
+    IncludeFile "scale-image.pbi"
+    IncludeFile "vector-drawing.pbi"
+    IncludeFile "scan-folder.pbi"
+    IncludeFile "string-builder.pbi"
+    IncludeFile "console.pbi"
+    IncludeFile "network.pbi"
+    IncludeFile "json.pbi"
+    IncludeFile "packer.pbi"
+    IncludeFile "single-instance.pbi"
   CompilerEndIf
   
 CompilerEndIf
