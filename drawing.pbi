@@ -27,14 +27,18 @@ CompilerIf (Not Defined(_PBSL_Drawing_Included, #PB_Constant))
     StartDrawing(CanvasOutput(_CanvasGadget))
   EndMacro
   
-  ;-
-  ;- - Drawing Procedures
-  
-  Procedure ClearOutput(Color.i)
-    DrawingMode(#PB_2DDrawing_AllChannels)
-    UnclipOutput()
-    Box(0, 0, OutputWidth(), OutputHeight(), Color)
-  EndProcedure
+  CompilerIf (Not #PBSL_NoGraphics)
+    
+    ;-
+    ;- - Drawing Procedures
+    
+    Procedure ClearOutput(Color.i)
+      DrawingMode(#PB_2DDrawing_AllChannels)
+      UnclipOutput()
+      Box(0, 0, OutputWidth(), OutputHeight(), Color)
+    EndProcedure
+    
+  CompilerEndIf
   
 CompilerEndIf
 ;-

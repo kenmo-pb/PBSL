@@ -414,29 +414,44 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   EndProcedure
   
   ;-
+  ;- - Compile Switches
+  
+  CompilerIf (Not Defined(PBSL_IncludeAll, #PB_Constant))
+    #PBSL_IncludeAll = #False
+  CompilerEndIf
+  CompilerIf (Not Defined(PBSL_NoGUI, #PB_Constant))
+    #PBSL_NoGUI = #False
+  CompilerEndIf
+  CompilerIf (Not Defined(PBSL_NoGraphics, #PB_Constant))
+    #PBSL_NoGraphics = #False
+  CompilerEndIf
+  
+  ;-
   ;- - PB Imports
   
-  CompilerIf (Not Defined(PB_Object_EnumerateStart, #PB_Procedure))
-    CompilerIf (#IsWindowsBuild)
-      Import ""
-        PB_Object_EnumerateStart(Object.i)
-        PB_Object_EnumerateNext(Object.i, *ID.Integer)
-        PB_Object_EnumerateAbort(Object.i)
-        PB_Object_Count(Objects.i)
-        PB_Window_Objects.i
-        PB_Gadget_GetRootWindow.i(GadgetID.i)
-      EndImport
-    CompilerElse
-      ImportC ""
-        PB_Object_EnumerateStart(Object.i)
-        PB_Object_EnumerateNext(Object.i, *ID.Integer)
-        PB_Object_EnumerateAbort(Object.i)
-        PB_Object_Count(Objects.i)
-        PB_Window_Objects.i
-        CompilerIf (Not #IsMacBuild)
+  CompilerIf (Not #PBSL_NoGUI)
+    CompilerIf (Not Defined(PB_Object_EnumerateStart, #PB_Procedure))
+      CompilerIf (#IsWindowsBuild)
+        Import ""
+          PB_Object_EnumerateStart(Object.i)
+          PB_Object_EnumerateNext(Object.i, *ID.Integer)
+          PB_Object_EnumerateAbort(Object.i)
+          PB_Object_Count(Objects.i)
+          PB_Window_Objects.i
           PB_Gadget_GetRootWindow.i(GadgetID.i)
-        CompilerEndIf
-      EndImport
+        EndImport
+      CompilerElse
+        ImportC ""
+          PB_Object_EnumerateStart(Object.i)
+          PB_Object_EnumerateNext(Object.i, *ID.Integer)
+          PB_Object_EnumerateAbort(Object.i)
+          PB_Object_Count(Objects.i)
+          PB_Window_Objects.i
+          CompilerIf (Not #IsMacBuild)
+            PB_Gadget_GetRootWindow.i(GadgetID.i)
+          CompilerEndIf
+        EndImport
+      CompilerEndIf
     CompilerEndIf
   CompilerEndIf
   
@@ -456,10 +471,6 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   ;-
   ;- - Library Includes
   
-  CompilerIf (Not Defined(PBSL_IncludeAll, #PB_Constant))
-    #PBSL_IncludeAll = #False
-  CompilerEndIf
-  
   CompilerIf (#True)
     IncludeFile "pb-compatibility.pbi"
     IncludeFile "math.pbi"
@@ -475,11 +486,11 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "window-desktop.pbi"
     IncludeFile "gadgets.pbi"
     IncludeFile "requesters.pbi"
-    IncludeFile "preferences.pbi"
   CompilerEndIf
   
   CompilerIf (#PBSL_IncludeAll)
     IncludeFile "os-version.pbi"
+    IncludeFile "preferences.pbi"
     IncludeFile "gadget-sizes.pbi"
     IncludeFile "list-requester.pbi"
     IncludeFile "scale-image.pbi"

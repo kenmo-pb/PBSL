@@ -40,29 +40,33 @@ CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
     SaveImage((_Image), _File, #PB_ImagePlugin_JPEG, MapPBDefault((_Quality), #JPEGQualityDefault))
   EndMacro
   
-  ;-
-  ;- - Image Procedures
-  
-  Procedure.i IsImageAnimated(Image.i)
-    CompilerIf (PBGTE(560))
-      ProcedureReturn (Bool(ImageFrameCount(Image) > 1))
-    CompilerElse
-      ProcedureReturn (#False)
-    CompilerEndIf
-  EndProcedure
-  
-  Procedure.i SaveImageByExtension(Image.i, File.s, Quality.i = #PB_Default)
-    Protected Result.i = #False
-    Select (LCase(GetExtensionPart(File)))
-      Case "bmp"
-        Result = SaveBMP(Image, File)
-      Case "png"
-        Result = SavePNG(Image, File)
-      Case "jpg", "jpeg"
-        Result = SaveJPEG(Image, File, MapPBDefault(Quality, #JPEGQualityDefault))
-    EndSelect
-    ProcedureReturn (Result)
-  EndProcedure
+  CompilerIf (Not #PBSL_NoGraphics)
+    
+    ;-
+    ;- - Image Procedures
+    
+    Procedure.i IsImageAnimated(Image.i)
+      CompilerIf (PBGTE(560))
+        ProcedureReturn (Bool(ImageFrameCount(Image) > 1))
+      CompilerElse
+        ProcedureReturn (#False)
+      CompilerEndIf
+    EndProcedure
+    
+    Procedure.i SaveImageByExtension(Image.i, File.s, Quality.i = #PB_Default)
+      Protected Result.i = #False
+      Select (LCase(GetExtensionPart(File)))
+        Case "bmp"
+          Result = SaveBMP(Image, File)
+        Case "png"
+          Result = SavePNG(Image, File)
+        Case "jpg", "jpeg"
+          Result = SaveJPEG(Image, File, MapPBDefault(Quality, #JPEGQualityDefault))
+      EndSelect
+      ProcedureReturn (Result)
+    EndProcedure
+    
+  CompilerEndIf
   
 CompilerEndIf
 ;-
