@@ -195,6 +195,8 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Declare.s Which(FileName.s)
+  
   Procedure ShowInExplorer(FileOrFolder.s)
     If (FileExists(FileOrFolder))
       CompilerIf (#IsWindowsBuild)

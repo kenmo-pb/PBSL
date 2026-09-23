@@ -91,6 +91,16 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     EndMacro
     
     ;-
+    ;- - Desktop Macros
+    
+    Macro PrimaryDesktopWidth()
+      DesktopWidth(#PrimaryDesktop)
+    EndMacro
+    Macro PrimaryDesktopHeight()
+      DesktopHeight(#PrimaryDesktop)
+    EndMacro
+    
+    ;-
     ;- - Window Procedures
     
     Procedure.i StandardWindowFlags(Resizable.i = #False, Hidden.i = #False)

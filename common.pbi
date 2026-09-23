@@ -326,6 +326,10 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   ;-
   ;- - Common Macros
   
+  Macro _DQ_
+    "
+  EndMacro
+  
   Macro CharsToBytes(_NumChars)
     ((_NumChars) * #CharSize)
   EndMacro
