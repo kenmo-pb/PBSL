@@ -11,6 +11,10 @@ CompilerIf (Not Defined(_PBSL_ListsMaps_Included, #PB_Constant))
   
   ;- - List Macros
   
+  Macro IsListEmpty(_List)
+    (Bool(ListSize(_List) = 0))
+  EndMacro
+  
   Macro SelectRandomElement(_List)
     SelectElement(_List, Random(ListSize(_List) - 1))
   EndMacro

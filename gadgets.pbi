@@ -68,6 +68,18 @@ CompilerIf (Not Defined(_PBSL_Gadgets_Included, #PB_Constant))
   Macro GetCanvasModifiers(_CanvasGadget)
     (GetGadgetAttribute((_CanvasGadget), #PB_Canvas_Modifiers))
   EndMacro
+  Macro GetCanvasCommand(_CanvasGadget)
+    (Bool(GetCanvasModifiers(_CanvasGadget) & #PB_Canvas_Command))
+  EndMacro
+  Macro GetCanvasControl(_CanvasGadget)
+    (Bool(GetCanvasModifiers(_CanvasGadget) & #PB_Canvas_Control))
+  EndMacro
+  Macro GetCanvasShift(_CanvasGadget)
+    (Bool(GetCanvasModifiers(_CanvasGadget) & #PB_Canvas_Shift))
+  EndMacro
+  Macro GetCanvasAlt(_CanvasGadget)
+    (Bool(GetCanvasModifiers(_CanvasGadget) & #PB_Canvas_Alt))
+  EndMacro
   Macro GetCanvasMouseX(_CanvasGadget)
     (GetGadgetAttribute((_CanvasGadget), #PB_Canvas_MouseX))
   EndMacro
@@ -80,6 +92,9 @@ CompilerIf (Not Defined(_PBSL_Gadgets_Included, #PB_Constant))
   
   Macro SetCanvasCursor(_CanvasGadget, _Cursor)
     SetGadgetAttribute((_CanvasGadget), #PB_Canvas_Cursor, (_Cursor))
+  EndMacro
+  Macro SetCanvasImage(_CanvasGadget, _ImageID)
+    SetGadgetAttribute((_CanvasGadget), #PB_Canvas_Image, (_ImageID))
   EndMacro
   
   Macro GetScrollAreaX(_ScrollAreaGadget)

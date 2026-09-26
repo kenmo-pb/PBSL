@@ -53,6 +53,10 @@ CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
       CompilerEndIf
     EndProcedure
     
+    Procedure.i IsImage32Bit(Image.i)
+      ProcedureReturn (Bool(ImageDepth(Image) = 32))
+    EndProcedure
+    
     Procedure.i SaveImageByExtension(Image.i, File.s, Quality.i = #PB_Default)
       Protected Result.i = #False
       Select (LCase(GetExtensionPart(File)))

@@ -42,6 +42,14 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   #PB_Date_LocalTime = 0
   #PB_Date_UTC       = 1
   
+  #PB_SoundPlugin_WAV  = $564157
+  #PB_SoundPlugin_FLAC = $43414C46
+  #PB_SoundPlugin_OGG  = $47474F
+  #PB_SoundPlugin_MP3  = $33504D
+  #PB_SoundPlugin_Opus = $5355504F
+  
+  #PB_ImagePlugin_WEBP = $50424557
+  
   ;-
   ;- - Compatibility Procedures
   

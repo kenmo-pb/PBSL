@@ -20,8 +20,21 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     #PB_Window_Hidden = #PB_Window_Invisible
   CompilerEndIf
   
+  #PB_Shortcut_ControlAlt      = #PB_Shortcut_Control | #PB_Shortcut_Alt
+  #PB_Shortcut_CommandAlt      = #PB_Shortcut_Command | #PB_Shortcut_Alt
+  #PB_Shortcut_ControlShift    = #PB_Shortcut_Control | #PB_Shortcut_Shift
+  #PB_Shortcut_CommandShift    = #PB_Shortcut_Command | #PB_Shortcut_Shift
+  #PB_Shortcut_ControlShiftAlt = #PB_Shortcut_Control | #PB_Shortcut_Shift | #PB_Shortcut_Alt
+  #PB_Shortcut_CommandShiftAlt = #PB_Shortcut_Command | #PB_Shortcut_Shift | #PB_Shortcut_Alt
+  #PB_Shortcut_AltShift        = #PB_Shortcut_Alt     | #PB_Shortcut_Shift
+  #PB_Shortcut_AltShift        = #PB_Shortcut_Alt     | #PB_Shortcut_Shift
+  
   #PB_Shortcut_Equal  = WindowsElse(#VK_OEM_PLUS,  '=')
   #PB_Shortcut_Hyphen = WindowsElse(#VK_OEM_MINUS, '-')
+  CompilerIf (#True)
+    #PB_Shortcut_Plus  = #PB_Shortcut_Equal
+    #PB_Shortcut_Minus = #PB_Shortcut_Hyphen
+  CompilerEndIf
   
   ;-
   ;- - Event Constants
@@ -88,6 +101,11 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     Macro WaitCloseWindow(_Window = #PB_Any)
       Repeat
       Until ((WaitWindowEvent() = #PB_Event_CloseWindow) And (((_Window) = #PB_Any) Or (EventWindow() = (_Window))))
+    EndMacro
+    
+    Macro AddAndBindShortcut(_Window, _Key, _MenuItem, _Callback)
+      AddKeyboardShortcut((_Window), (_Key), (_MenuItem))
+      BindEvent(#PB_Event_Menu, (_Callback), (_Window), (_MenuItem))
     EndMacro
     
     ;-

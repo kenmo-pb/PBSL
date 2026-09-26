@@ -454,6 +454,15 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure RemoveStringFromList(StringToRemove.s, List StrList.s())
+    ForEach StrList()
+      If (StrList() = StringToRemove)
+        DeleteElement(StrList())
+        ;Break
+      EndIf
+    Next
+  EndProcedure
+  
   Procedure.i DeduplicateStringList(List StrList.s())
     Protected Result.i = 0
     NewMap Found.i()

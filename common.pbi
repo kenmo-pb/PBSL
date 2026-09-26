@@ -141,8 +141,10 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   
   CompilerIf (#PB_Shortcut_Command = #PB_Shortcut_Control)
     #CommandShortcutIsControl = #True
+    #Cmd$ = "Ctrl"
   CompilerElse
     #CommandShortcutIsControl = #False
+    #Cmd$ = "Cmd"
   CompilerEndIf
   
   ;-
