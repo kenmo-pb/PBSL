@@ -502,6 +502,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "scale-image.pbi"
     IncludeFile "vector-drawing.pbi"
     IncludeFile "scan-folder.pbi"
+    IncludeFile "duplicate-files.pbi"
     IncludeFile "string-builder.pbi"
     IncludeFile "console.pbi"
     IncludeFile "network.pbi"
