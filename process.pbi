@@ -15,8 +15,14 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
     WriteProgramData(_Program, #PB_Program_Eof, 0)
   EndMacro
   
+  Macro RunProgramWait(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null)
+    RunProgram(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Wait)
+  EndMacro
   Macro RunProgramHidden(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null)
     RunProgram(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Hide)
+  EndMacro
+  Macro RunProgramWaitHidden(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null)
+    RunProgram(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Wait | #PB_Program_Hide)
   EndMacro
   Macro RunProgramOutputHidden(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null)
     RunProgramOutput(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Hide)
