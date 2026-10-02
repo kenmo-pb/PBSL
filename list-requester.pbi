@@ -13,8 +13,10 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
   
   ;- - ListRequester Constants
   
-  #ListRequester_MultiSelect  = $01
-  #ListRequester_FilterGadget = $02
+  Enumeration ; ListRequester Flags
+    #ListRequester_MultiSelect = $01
+    #ListRequester_Filter      = $02
+  EndEnumeration
   
   ;-
   ;- - ListRequester Globals
@@ -23,6 +25,7 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
   
   Global _PBSL_ListRequesterOKLabel.s     = "OK"
   Global _PBSL_ListRequesterCancelLabel.s = "Cancel"
+  Global _PBSL_ListRequesterFilterLabel.s = "Filter"
   
   Prototype.i PBSL_ListRequesterCallback(Selection.s) ; return 0 to accept, non-zero to reject
   
@@ -78,7 +81,7 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
     EndIf
   EndProcedure
   
-  Procedure.s ListRequester(Title.s, Message.s, List String.s(), ParentWindow.i = #PB_Ignore, Flags.i = #Null, Callback.PBSL_ListRequesterCallback = #Null)
+  Procedure.s ListRequester(Title.s, Message.s, List String.s(), Flags.i = #Null, ParentWindow.i = #PB_Ignore, Callback.PBSL_ListRequesterCallback = #Null)
     Protected Result.s = ""
     
     If (Flags = #PB_Default)
@@ -130,8 +133,12 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
         EndIf
         
         Protected Filter.i = #Null
-        If (Flags & #ListRequester_FilterGadget)
-          Filter = StringGadget(#PB_Any, Padding, y, ContentsW, StandardStringGadgetHeight(), "")
+        If (Flags & #ListRequester_Filter)
+          CompilerIf (PBGTE(630))
+            Filter = StringGadget(#PB_Any, Padding, y, ContentsW, StandardStringGadgetHeight(), _PBSL_ListRequesterFilterLabel, #PB_String_PlaceHolder)
+          CompilerElse
+            Filter = StringGadget(#PB_Any, Padding, y, ContentsW, StandardStringGadgetHeight(), "")
+          CompilerEndIf
           CenterStringGadget(Filter)
           y + GadgetHeight(Filter)
           y + Padding/2
@@ -161,7 +168,7 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
           HideWindow(_ListRequesterWindow, #False, #PB_Window_ScreenCentered)
         EndIf
         SetActiveWindow(_ListRequesterWindow)
-        If (Flags & #ListRequester_FilterGadget)
+        If (Flags & #ListRequester_Filter)
           SetActiveGadget(Filter)
         Else
           SetGadgetState(ListView, 0)
@@ -223,6 +230,13 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
                 If (Done)
                   If (Callback And (Callback(Result) <> 0))
                     Done = #False
+                  EndIf
+                Else
+                  If (Filter)
+                    If ((GetActiveGadget() = Filter) And (CountGadgetItems(ListView) > 0))
+                      SetGadgetState(ListView, 0)
+                      SetActiveGadget(ListView)
+                    EndIf
                   EndIf
                 EndIf
               ElseIf (EventMenu() = 1)
