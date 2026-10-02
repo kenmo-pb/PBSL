@@ -238,6 +238,11 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   #NBSP  = $A0
   #NBSP$ = Chr(#NBSP)
   
+  #EnDash  = $2013
+  #EmDash  = $2014
+  #EnDash$ = Chr(#EnDash)
+  #EmDash$ = Chr(#EmDash)
+  
   #CurrentDirectory$ = "."
   #ParentDirectory$  = ".."
   #HomeDirectory$    = "~"
@@ -330,6 +335,10 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   
   Macro _DQ_
     "
+  EndMacro
+  
+  Macro Invert(_Expression)
+    (Bool(Not (_Expression)))
   EndMacro
   
   Macro CharsToBytes(_NumChars)

@@ -55,6 +55,12 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
   #ReplacementChar  = $FFFD
   #ReplacementChar$ = Chr(#ReplacementChar)
   
+  #UppercaseLetters$       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  #LowercaseLetters$       = "abcdefghijklmnopqrstuvwxyz"
+  #NumericCharacters$      = "0123456789"
+  #AlphabetCharacters$     = #UppercaseLetters$   + #LowercaseLetters$
+  #AlphaNumericCharacters$ = #AlphabetCharacters$ + #NumericCharacters$
+  
   Global Dim _PBSL_StrBool.s((2)-1)
   _PBSL_StrBool(0) = "False"
   _PBSL_StrBool(1) = "True"
@@ -348,6 +354,111 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
       ProcedureReturn (PeekS(*Start, BytesToChars(*Stop - *Start) + 1))
     EndIf
     ProcedureReturn ("")
+  EndProcedure
+  
+  Procedure.s RemoveCharacters(Text.s, Characters.s, Invert.i = #False)
+    Protected Result.s
+    If (Text)
+      If (Characters)
+        Protected *C.CHARACTER = @Text
+        While (*C\c)
+          Protected RemoveIt.i = #False
+          Protected *C2.CHARACTER = @Characters
+          While (*C2\c)
+            If (*C2\c = *C\c)
+              RemoveIt = #True
+              Break
+            EndIf
+            *C2 + #CharSize
+          Wend
+          If (Invert)
+            RemoveIt = Invert(RemoveIt)
+          EndIf
+          If (Not RemoveIt)
+            Result + Chr(*C\c)
+          EndIf
+          *C + #CharSize
+        Wend
+      Else ; no characters specified!
+        If (Invert)
+          Result = ""
+        Else
+          Result = Text
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s FilterCharacters(Text.s, CharactersToKeep.s)
+    ProcedureReturn (RemoveCharacters(Text, CharactersToKeep, #True))
+  EndProcedure
+  
+  Procedure.s _TitleCaseTerm(Term.s)
+    Protected FoundLetter.i = #False
+    Protected *C.CHARACTER = @Term
+    While (*C\c)
+      Select (*C\c)
+        Case 'a' To 'z'
+          If (Not FoundLetter)
+            *C\c + ('A' - 'a')
+            FoundLetter = #True
+          EndIf
+        Case 'A' To 'Z'
+          FoundLetter = #True
+        Case '-'
+          FoundLetter = #False
+        Case '/'
+          FoundLetter = #False
+          ;Case ':'
+          ;  FoundLetter = #False
+          ;Case '.'
+          ;  FoundLetter = #False
+      EndSelect
+      *C + #CharSize
+    Wend
+    ProcedureReturn (Term)
+  EndProcedure
+  
+  Procedure.s TitleCase(Text.s, LowerCaseMinorWords.i = #True)
+    Protected Result.s = ""
+    ; https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case
+    Protected WordIndex.i = 0
+    Protected N.i = 1 + CountString(Text, " ")
+    Protected i.i
+    For i = 1 To N
+      If (i > 1)
+        Result + " "
+      EndIf
+      Protected Term.s = StringField(Text, i, " ")
+      If (Term)
+        If (LowerCaseMinorWords)
+          WordIndex + 1
+          Protected ShouldUpper.i = #False
+          If (WordIndex = 1)
+            ShouldUpper = #True
+          Else
+            Select (LCase(FilterCharacters(Term, #AlphaNumericCharacters$)))
+              Case "and", "as", "but", "for", "if", "nor", "or", "so", "yet"
+              Case "a", "an", "the"
+              Case "as", "at", "by", "for", "in", "of", "off", "on", "per", "to", "up", "via"
+              Default
+                ShouldUpper = #True
+            EndSelect
+          EndIf
+          If (ShouldUpper)
+            Term = _TitleCaseTerm(Term)
+          EndIf
+          Result + Term
+          If (Right(Term, 1) = ":")
+            WordIndex = 0
+          EndIf
+        Else
+          Result + _TitleCaseTerm(Term)
+        EndIf
+      EndIf
+    Next i
+    ProcedureReturn (Result)
   EndProcedure
   
   ;-

@@ -78,5 +78,22 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.s PathRequesterViaFileRequester(Title.s, InitialPath.s, ParentID.i = #Null)
+    Protected Result.s = ""
+    If (InitialPath = "")
+      InitialPath = GetCurrentDirectory()
+    EndIf
+    InitialPath = InitialPath + ".ThisPath"
+    Protected Path.s = OpenFileRequester(Title, InitialPath, "Path|*.*", 0, #Null, ParentID)
+    If (Path)
+      If (FileSize(Path) = #PB_FileSize_Directory)
+        Result = Path
+      Else
+        Result = GetPathPart(Path)
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
 CompilerEndIf
 ;-
