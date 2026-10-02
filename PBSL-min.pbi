@@ -4,6 +4,6 @@ CompilerIf (#PB_Compiler_IsMainFile)
 CompilerEndIf
 
 ;#PBSL_IncludeAll = #True
-;#PBSL_NoGUI = #True
-;#PBSL_NoGraphics = #True
+#PBSL_NoGUI = #True
+#PBSL_NoGraphics = #True
 XIncludeFile "common.pbi"
