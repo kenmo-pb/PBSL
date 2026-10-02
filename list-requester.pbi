@@ -11,6 +11,12 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
   
   IncludeFile "gadget-sizes.pbi"
   
+  ;- - ListRequester Constants
+  
+  #ListRequester_MultiSelect  = $01
+  #ListRequester_FilterGadget = $02
+  
+  ;-
   ;- - ListRequester Globals
   
   Global _ListRequesterWindow.i = #Null
@@ -30,16 +36,62 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
     ProcedureReturn (#Null)
   EndProcedure
   
-  Procedure.s ListRequester(Title.s, Message.s, List String.s(), ParentWindow.i = #PB_Ignore, MultiSelect.i = #False, Callback.PBSL_ListRequesterCallback = #Null)
+  Procedure _ListRequesterUpdateFilter(Filter.i, ListView.i, List String.s())
+    Protected PrevSel.i = GetGadgetState(ListView)
+    Protected PrevSelText.s = ""
+    If (PrevSel >= 0)
+      PrevSelText = GetGadgetItemText(ListView, PrevSel)
+    EndIf
+    Protected FilterText.s = Trim(GetGadgetText(Filter))
+    ClearGadgetItems(ListView)
+    NewList SearchTerm.s()
+    SplitStringToList(FilterText, SearchTerm(), " ", #True)
+    If (ListSize(SearchTerm()) > 0)
+      Protected Match.i
+      Protected i.i = 0
+      ForEach (String())
+        Match = #True
+        ForEach SearchTerm()
+          If (Not FindString(String(), SearchTerm(), 1, #PB_String_NoCase))
+            Match = #False
+            Break
+          EndIf
+        Next
+        If (Match)
+          AddGadgetItem(ListView, i, String())
+          If (String() = PrevSelText)
+            SetGadgetState(ListView, i)
+          EndIf
+          i + 1
+        EndIf
+      Next
+      If (i = 1)
+        SetGadgetState(ListView, 0)
+      EndIf
+    Else
+      ForEach (String())
+        AddGadgetItem(ListView, ListIndex(String()), String())
+        If (String() = PrevSelText)
+          SetGadgetState(ListView, ListIndex(String()))
+        EndIf
+      Next
+    EndIf
+  EndProcedure
+  
+  Procedure.s ListRequester(Title.s, Message.s, List String.s(), ParentWindow.i = #PB_Ignore, Flags.i = #Null, Callback.PBSL_ListRequesterCallback = #Null)
     Protected Result.s = ""
+    
+    If (Flags = #PB_Default)
+      Flags = #Null
+    EndIf
     
     Protected ParentID.i = #Null
     If (ParentWindow <> #PB_Ignore)
       ParentID = WindowID(ParentWindow)
     EndIf
     If (ListSize(String()) > 0)
-      Protected Flags.i = #PB_Window_SystemMenu | #PB_Window_Invisible
-      _ListRequesterWindow = OpenWindow(#PB_Any, 0, 0, 320, 240, Title, Flags, ParentID)
+      Protected WinFlags.i = #PB_Window_SystemMenu | #PB_Window_Invisible
+      _ListRequesterWindow = OpenWindow(#PB_Any, 0, 0, 320, 240, Title, WinFlags, ParentID)
       If (_ListRequesterWindow)
         If (ParentID)
           DisableWindow(ParentWindow, #True)
@@ -77,12 +129,19 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
           HideGadget(Label, #True)
         EndIf
         
-        Flags = #PB_ListView_MultiSelect * Bool(MultiSelect)
-        Protected ListView.i = ListViewGadget(#PB_Any, Padding, y, ContentsW, LabelH * (3 + 5.0 * Log10(ListSize(String()))), Flags)
+        Protected Filter.i = #Null
+        If (Flags & #ListRequester_FilterGadget)
+          Filter = StringGadget(#PB_Any, Padding, y, ContentsW, StandardStringGadgetHeight(), "")
+          CenterStringGadget(Filter)
+          y + GadgetHeight(Filter)
+          y + Padding/2
+        EndIf
+        
+        WinFlags = #PB_ListView_MultiSelect * Bool(Flags & #ListRequester_MultiSelect)
+        Protected ListView.i = ListViewGadget(#PB_Any, Padding, y, ContentsW, LabelH * (3 + 5.0 * Log10(ListSize(String()))), WinFlags)
         ForEach (String())
           AddGadgetItem(ListView, ListIndex(String()), String())
         Next
-        SetGadgetState(ListView, 0)
         y + GadgetHeight(ListView) + Padding
         
         OKButton     = ButtonGadget(#PB_Any, Padding + (ContentsW/2) - (ButtonW + Padding), y, ButtonW, ButtonH, _PBSL_ListRequesterOKLabel, #PB_Button_Default)
@@ -91,6 +150,9 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
         
         AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Return, 0)
         AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Escape, 1)
+        If (Flags & #ListRequester_MultiSelect)
+          AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Command | #PB_Shortcut_A, 3)
+        EndIf
         
         ResizeWindow(_ListRequesterWindow, #PB_Ignore, #PB_Ignore, ContentsW + 2*Padding, y)
         If (ParentID)
@@ -99,7 +161,12 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
           HideWindow(_ListRequesterWindow, #False, #PB_Window_ScreenCentered)
         EndIf
         SetActiveWindow(_ListRequesterWindow)
-        SetActiveGadget(ListView)
+        If (Flags & #ListRequester_FilterGadget)
+          SetActiveGadget(Filter)
+        Else
+          SetGadgetState(ListView, 0)
+          SetActiveGadget(ListView)
+        EndIf
         
         Protected Done.i = #False
         Protected Event.i
@@ -113,11 +180,31 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
                 PostEvent(#PB_Event_Menu, _ListRequesterWindow, 0)
               ElseIf (EventGadget() = CancelButton)
                 PostEvent(#PB_Event_Menu, _ListRequesterWindow, 1)
+              ElseIf (Filter And (EventGadget() = Filter))
+                If (EventType() = #PB_EventType_Change)
+                  _ListRequesterUpdateFilter(Filter, ListView, String())
+                ElseIf (EventType() = #PB_EventType_Focus)
+                  AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Up,       2)
+                  AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Down,     2)
+                  AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_PageUp,   2)
+                  AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_PageDown, 2)
+                  If (Flags & #ListRequester_MultiSelect)
+                    RemoveKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Command | #PB_Shortcut_A)
+                  EndIf
+                ElseIf (EventType() = #PB_EventType_LostFocus)
+                  RemoveKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Up      )
+                  RemoveKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Down    )
+                  RemoveKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_PageUp  )
+                  RemoveKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_PageDown)
+                  If (Flags & #ListRequester_MultiSelect)
+                    AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Command | #PB_Shortcut_A, 3)
+                  EndIf
+                EndIf  
               EndIf
             ElseIf (Event = #PB_Event_Menu)
               If (EventMenu() = 0)
                 Result = ""
-                If (MultiSelect)
+                If (Flags & #ListRequester_MultiSelect)
                   Protected i.i
                   For i = 0 To (CountGadgetItems(ListView) - 1)
                     If (GetGadgetItemState(ListView, i))
@@ -129,8 +216,7 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
                 Else
                   Event = GetGadgetState(ListView)
                   If (Event >= 0)
-                    SelectElement(String(), Event)
-                    Result = String()
+                    Result = GetGadgetItemText(ListView, Event)
                     Done = #True
                   EndIf
                 EndIf
@@ -142,12 +228,24 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
               ElseIf (EventMenu() = 1)
                 Result = ""
                 Done = #True
+              ElseIf (EventMenu() = 2)
+                If (CountGadgetItems(ListView) > 0)
+                  If (GetGadgetState(ListView) = -1)
+                    SetGadgetState(ListView, 0)
+                  EndIf
+                  SetActiveGadget(ListView)
+                EndIf
+              ElseIf (EventMenu() = 3)
+                SelectAllGadgetItems(ListView)
               EndIf
             EndIf
           EndIf
         Until (Done)
         
         HideWindow(_ListRequesterWindow, #True)
+        If (Filter)
+          FreeGadget(Filter)
+        EndIf
         FreeGadget(Label)
         FreeGadget(ListView)
         FreeGadget(OKButton)
