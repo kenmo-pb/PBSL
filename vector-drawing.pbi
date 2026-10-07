@@ -9,7 +9,26 @@ CompilerEndIf
 CompilerIf (Not Defined(_PBSL_VectorDrawing_Included, #PB_Constant))
   #_PBSL_VectorDrawing_Included = #True
   
+  ;- - Vector Drawing Constants
+  
+  #PB_Path_Absolute = #PB_Path_Default
+  
+  ;-
   ;- - Vector Drawing Macros
+  
+  Macro MovePathCursorAbsolute(_x, _y)
+    MovePathCursor((_x), (_y), #PB_Path_Absolute)
+  EndMacro
+  Macro MovePathCursorRelative(_x, _y)
+    MovePathCursor((_x), (_y), #PB_Path_Relative)
+  EndMacro
+  
+  Macro PushVectorState()
+    SaveVectorState()
+  EndMacro
+  Macro PopVectorState()
+    RestoreVectorState()
+  EndMacro
   
   Macro StartPrinterVectorDrawing(_Unit = #PB_Unit_Point)
     StartVectorDrawing(PrinterVectorOutput(_Unit))
@@ -102,6 +121,30 @@ CompilerIf (Not Defined(_PBSL_VectorDrawing_Included, #PB_Constant))
       EndIf
       StrokePath(StrokeWidth)
       RestoreVectorState()
+    EndProcedure
+    
+    Procedure DrawVectorImageAtCorner(Image.i, LeftX.d, TopY.d, Scale.d = 1.0)
+      PushVectorState()
+      MovePathCursor(LeftX, TopY)
+      If (Scale <> 1.0)
+        ScaleCoordinates(Scale, Scale)
+      EndIf
+      DrawVectorImage(ImageID(Image))
+      PopVectorState()
+    EndProcedure
+    
+    Procedure DrawVectorImageByCenter(Image.i, CenterX.d, CenterY.d, Angle.d = #ZeroDegrees, Scale.d = 1.0)
+      PushVectorState()
+      MovePathCursor(CenterX, CenterY)
+      If (Angle <> 0.0)
+        RotateCoordinates(CenterX, CenterY, Angle)
+      EndIf
+      If (Scale <> 1.0)
+        ScaleCoordinates(Scale, Scale)
+      EndIf
+      MovePathCursor(-ImageWidth(Image)*0.5, -ImageHeight(Image)*0.5, #PB_Path_Relative)
+      DrawVectorImage(ImageID(Image))
+      PopVectorState()
     EndProcedure
     
   CompilerEndIf
