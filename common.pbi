@@ -497,8 +497,8 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "process.pbi"
     IncludeFile "color.pbi"
     IncludeFile "drawing.pbi"
-    IncludeFile "images.pbi"
     IncludeFile "window-desktop.pbi"
+    IncludeFile "images.pbi"
     IncludeFile "gadgets.pbi"
     IncludeFile "requesters.pbi"
   CompilerEndIf
