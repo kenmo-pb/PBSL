@@ -13,6 +13,9 @@ CompilerIf (Not Defined(_PBSL_Math_Included, #PB_Constant))
   
   #TwoPi = 2.0 * #PI
   
+  #ZeroRadian  = 0.0
+  #ZeroDegrees = 0.0
+  
   #Max7Bit  = $7F
   #Max8Bit  = $FF
   #Max15Bit = $7FFF
@@ -36,6 +39,19 @@ CompilerIf (Not Defined(_PBSL_Math_Included, #PB_Constant))
     #IntMin = #LongMin
     #IntMax = #LongMax
   CompilerEndIf
+  
+  ;-
+  ;- - Math Macros
+  
+  Macro SinDeg(_Degrees)
+    Sin(Radian(_Degrees))
+  EndMacro
+  Macro CosDeg(_Degrees)
+    Cos(Radian(_Degrees))
+  EndMacro
+  Macro TanDeg(_Degrees)
+    Tan(Radian(_Degrees))
+  EndMacro
   
   ;-
   ;- - Math Procedures
@@ -97,6 +113,28 @@ CompilerIf (Not Defined(_PBSL_Math_Included, #PB_Constant))
   Macro IIfS(_Expression, _StringIfTrue, _StringIfFalse)
     _IIfS(Bool(_Expression), (_StringIfTrue), (_StringIfFalse))
   EndMacro
+  
+  Procedure.d FitRect(SourceWidth.i, SourceHeight.i, DestWidth.i, DestHeight.i, Fill.i = #False, *NewWidth.INTEGER = #Null, *NewHeight.INTEGER = #Null)
+    Protected Scale.d = 0.0
+    If ((SourceWidth > 0) And (SourceHeight > 0))
+      If ((DestWidth > 0) And (DestHeight > 0))
+        Scale = 1.0 * DestWidth / SourceWidth
+        Protected yScale.d = 1.0 * DestHeight / SourceHeight
+        If ((yScale < Scale) XOr Fill)
+          Scale = yScale
+        EndIf
+      EndIf
+    EndIf
+    If (Scale > 0.0)
+      If (*NewWidth)
+        *NewWidth\i = SourceWidth * Scale
+      EndIf
+      If (*NewHeight)
+        *NewHeight\i = SourceHeight * Scale
+      EndIf
+    EndIf
+    ProcedureReturn (Scale)
+  EndProcedure
   
   ;-
   ;- - Endian Handling
