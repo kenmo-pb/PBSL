@@ -15,6 +15,8 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   
   #RequestersSupportParentID = PBGTE(610)
   
+  #WEBPSupport = PBGTE(650)
+  
   CompilerIf (Not Defined(PB_Compiler_Backend, #PB_Constant))
     #PB_Backend_Asm      = 0
     #PB_Backend_C        = 1
