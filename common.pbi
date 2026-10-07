@@ -518,6 +518,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "network.pbi"
     IncludeFile "json.pbi"
     IncludeFile "packer.pbi"
+    IncludeFile "scintilla.pbi"
     IncludeFile "single-instance.pbi"
   CompilerEndIf
   
