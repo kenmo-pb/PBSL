@@ -156,6 +156,10 @@ CompilerIf (Not Defined(_PBSL_WindowsOS_Included, #PB_Constant))
         ProcedureReturn (Result)
       EndProcedure
       
+      Procedure.i IsVKDown(vKey.i)
+        ProcedureReturn (Bool(GetAsyncKeyState_(vKey) & $8000)) ; "The most significant bit of the return value [SHORT] is set if the specified key is currently down."
+      EndProcedure
+      
       ;-
       ;- - Patch String/ComboBoxGadget
       
