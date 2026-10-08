@@ -154,6 +154,10 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
   Procedure.s NormalizePath(Path.s, ExpandCurrentDirectory.i = #False)
     Protected Result.s = ""
     
+    If (StartsWith(Path, "file://"))
+      Path = Mid(Path, 1 + Len("file://"))
+    EndIf
+    
     If ((Path = "") And (ExpandCurrentDirectory) And (#False))
       Path = #CurrentDirectory$
     EndIf

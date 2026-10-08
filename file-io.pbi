@@ -9,6 +9,16 @@ CompilerEndIf
 CompilerIf (Not Defined(_PBSL_FileIO_Included, #PB_Constant))
   #_PBSL_FileIO_Included = #True
   
+  ;- - File Macros
+  
+  Macro WriteStringCRLF(_File, _Text, _Format = #DefaultIOStringFormat)
+    WriteString((_File), _Text + #CRLF$, (_Format))
+  EndMacro
+  Macro WriteStringLF(_File, _Text, _Format = #DefaultIOStringFormat)
+    WriteString((_File), _Text + #LF$, (_Format))
+  EndMacro
+  
+  ;-
   ;- - File Procedures
   
   Procedure.i ReadFileInteger(File.s)

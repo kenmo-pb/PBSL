@@ -464,6 +464,13 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
   ;-
   ;- - String Buffers
   
+  Macro UTF8Length(_String)
+    (StringByteLength(_String, #PB_UTF8))
+  EndMacro
+  Macro UTF8LengthN(_String)
+    (UTF8Length(_String) + 1)
+  EndMacro
+  
   Procedure.i IsStandardStringFormat(StringFormat.i)
     Select (StringFormat)
       Case #PB_Ascii, #PB_UTF8, #PB_Unicode

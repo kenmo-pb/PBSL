@@ -98,6 +98,10 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
       HideWindow((_Window), #False)
     EndMacro
     
+    Macro FlushWindowEvents()
+      While (WindowEvent()) : Wend
+    EndMacro
+    
     Macro WaitCloseWindow(_Window = #PB_Any)
       Repeat
       Until ((WaitWindowEvent() = #PB_Event_CloseWindow) And (((_Window) = #PB_Any) Or (EventWindow() = (_Window))))
@@ -106,6 +110,10 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     Macro AddAndBindShortcut(_Window, _Key, _MenuItem, _Callback)
       AddKeyboardShortcut((_Window), (_Key), (_MenuItem))
       BindEvent(#PB_Event_Menu, (_Callback), (_Window), (_MenuItem))
+    EndMacro
+    
+    Macro CurrentGadgetList()
+      UseGadgetList(0) ; "If 'WindowID' is 0, the current GadgetList window will be returned and nothing will be changed."
     EndMacro
     
     ;-
@@ -139,7 +147,7 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     
     Procedure EnsureGadgetListOpen()
       Static DummyWindow.i = #Null
-      If (UseGadgetList(0) = 0)
+      If (CurrentGadgetList() = 0)
         If (Not DummyWindow)
           DummyWindow = OpenWindow(#PB_Any, 0, 0, 100, 100, "", #PB_Window_Invisible | #PB_Window_BorderLess)
         EndIf
@@ -246,7 +254,7 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     EndProcedure
     
     Procedure.i GetBuildWindow()
-      ProcedureReturn (GetWindowFromWindowID(UseGadgetList(0)))
+      ProcedureReturn (GetWindowFromWindowID(CurrentGadgetList()))
     EndProcedure
     
     Procedure.i IsMinimized(Window.i)
