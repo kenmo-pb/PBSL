@@ -146,8 +146,16 @@ CompilerIf (Not Defined(_PBSL_Scintilla_Included, #PB_Constant))
     SSM((_Gadget), #SCI_GETFOCUS)
   EndMacro
   
+  Macro Sci_GetIndent(_Gadget)
+    SSM((_Gadget), #SCI_GETINDENT)
+  EndMacro
+  
   Macro Sci_GetLength(_Gadget)
     SSM((_Gadget), #SCI_GETLENGTH)
+  EndMacro
+  
+  Macro Sci_GetLineCount(_Gadget)
+    SSM((_Gadget), #SCI_GETLINECOUNT)
   EndMacro
   
   Macro Sci_GetLineEndPosition(_Line)
@@ -168,6 +176,10 @@ CompilerIf (Not Defined(_PBSL_Scintilla_Included, #PB_Constant))
   
   Macro Sci_GetTextLength(_Gadget)
     SSM((_Gadget), #SCI_GETTEXTLENGTH)
+  EndMacro
+  
+  Macro Sci_GetUseTabs(_Gadget)
+    SSM((_Gadget), #SCI_GETUSETABS)
   EndMacro
   
   Macro Sci_GrabFocus(_Gadget)
@@ -212,6 +224,14 @@ CompilerIf (Not Defined(_PBSL_Scintilla_Included, #PB_Constant))
   
   ;-
   
+  Macro Sci_ScrollToEnd(_Gadget)
+    SSM((_Gadget), #SCI_SCROLLTOEND)
+  EndMacro
+  
+  Macro Sci_ScrollToStart(_Gadget)
+    SSM((_Gadget), #SCI_SCROLLTOSTART)
+  EndMacro
+  
   Macro Sci_SelectAll(_Gadget)
     SSM((_Gadget), #SCI_SELECTALL)
   EndMacro
@@ -244,6 +264,14 @@ CompilerIf (Not Defined(_PBSL_Scintilla_Included, #PB_Constant))
     SSM((_Gadget), #SCI_SETHSCROLLBAR, (_Visible))
   EndMacro
   
+  Macro Sci_SetIndent(_Gadget, _IndentSize)
+    SSM((_Gadget), #SCI_SETINDENT, (_IndentSize))
+  EndMacro
+  
+  Macro Sci_SetMarginTypeN(_Gadget, _Margin, _MarginType)
+    SSM((_Gadget), #SCI_SETMARGINTYPEN, (_Margin), (_MarginType))
+  EndMacro
+  
   Macro Sci_SetMarginWidthN(_Gadget, _Margin, _PixelWidth)
     SSM((_Gadget), #SCI_SETMARGINWIDTHN, (_Margin), (_PixelWidth))
   EndMacro
@@ -274,6 +302,10 @@ CompilerIf (Not Defined(_PBSL_Scintilla_Included, #PB_Constant))
   
   Macro Sci_SetText(_Gadget, _Text)
     SSMIntString((_Gadget), #SCI_SETTEXT, #Null, _Text)
+  EndMacro
+  
+  Macro Sci_SetUseTabs(_Gadget, _UseTabs)
+    SSM((_Gadget), #SCI_SETUSETABS, (_UseTabs))
   EndMacro
   
   Macro Sci_SetViewEOL(_Gadget, _Visible)
@@ -383,6 +415,29 @@ CompilerIf (Not Defined(_PBSL_Scintilla_Included, #PB_Constant))
     EndIf
     ProcedureReturn (Result)
   EndProcedure
+  
+  Procedure.s Sci_GetTextRangeFull(Gadget.i, Min.q, Max.q)
+    Protected Result.s = ""
+    If (Max = -1)
+      Max = Sci_GetLength(Gadget)
+    EndIf
+    Protected N.i = 1 + (Max - Min)
+    Protected *Buffer = AllocateMemory(N, #PB_Memory_NoClear)
+    If (*Buffer)
+      Protected TRF.SCTextRangeFull
+      TRF\chrg\cpMin = Min
+      TRF\chrg\cpMax = Max
+      TRF\lpstrText = *Buffer
+      SSM(Gadget, #SCI_GETTEXTRANGEFULL, #Null, @TRF)
+      Result = PeekS(*Buffer, N, #PB_UTF8 | #PB_ByteLength)
+      FreeMemory(*Buffer)
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Macro Sci_GetTextRange(_Gadget, _Min, _Max)
+    Sci_GetTextRangeFull((_Gadget), (_Min), (_Max))
+  EndMacro
   
   Procedure.i ScintillaLoadFromFile(Gadget.i, File.s, MarkAsNew.i = #False)
     Protected Result.i = #False
