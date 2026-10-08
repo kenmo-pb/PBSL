@@ -93,6 +93,8 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
       ParentID = WindowID(ParentWindow)
     EndIf
     If (ListSize(String()) > 0)
+      PushListPosition(String())
+      Protected PrevGadgetList.i = CurrentGadgetList()
       Protected WinFlags.i = #PB_Window_SystemMenu | #PB_Window_Invisible
       _ListRequesterWindow = OpenWindow(#PB_Any, 0, 0, 320, 240, Title, WinFlags, ParentID)
       If (_ListRequesterWindow)
@@ -163,9 +165,13 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
         
         ResizeWindow(_ListRequesterWindow, #PB_Ignore, #PB_Ignore, ContentsW + 2*Padding, y)
         If (ParentID)
-          HideWindow(_ListRequesterWindow, #False, #PB_Window_WindowCentered)
+          ;HideWindow(_ListRequesterWindow, #False, #PB_Window_WindowCentered)
+          CenterWindowInWindow(_ListRequesterWindow, ParentWindow)
+          ShowWindow(_ListRequesterWindow)
         Else
-          HideWindow(_ListRequesterWindow, #False, #PB_Window_ScreenCentered)
+          ;HideWindow(_ListRequesterWindow, #False, #PB_Window_ScreenCentered)
+          CenterWindowInDesktop(_ListRequesterWindow, #PrimaryDesktop)
+          ShowWindow(_ListRequesterWindow)
         EndIf
         SetActiveWindow(_ListRequesterWindow)
         If (Flags & #ListRequester_Filter)
@@ -271,6 +277,10 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
           SetActiveWindow(ParentWindow)
         EndIf
       EndIf
+      If (PrevGadgetList)
+        UseGadgetList(PrevGadgetList)
+      EndIf
+      PopListPosition(String())
     EndIf
     
     ProcedureReturn (Result)
