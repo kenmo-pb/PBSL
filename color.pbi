@@ -33,6 +33,40 @@ CompilerIf (Not Defined(_PBSL_Color_Included, #PB_Constant))
     #ColorFormat_RGBComponents
   EndEnumeration
   
+  ; Solarized Light/Dark Scheme (https://ethanschoonover.com/solarized/)
+  
+  CompilerIf (#True)
+    
+    #Solarized_Base03 = $362b00
+    #Solarized_Base02 = $423607
+    #Solarized_Base01 = $756e58
+    #Solarized_Base00 = $837b65
+    #Solarized_Base0  = $969483
+    #Solarized_Base1  = $a1a193
+    #Solarized_Base2  = $d5e8ee
+    #Solarized_Base3  = $e3f6fd
+    
+    #Solarized_Yellow  = $0089b5
+    #Solarized_Orange  = $164bcb
+    #Solarized_Red     = $2f32dc
+    #Solarized_Magenta = $8236d3
+    #Solarized_Violet  = $c4716c
+    #Solarized_Blue    = $d28b26
+    #Solarized_Cyan    = $98a12a
+    #Solarized_Green   = $009985
+    
+    #Solarized_LightBackground    = #Solarized_Base3
+    #Solarized_LightBackgroundAlt = #Solarized_Base2
+    #Solarized_DarkForeground     = #Solarized_Base00
+    #Solarized_DarkForegroundAlt  = #Solarized_Base01
+    
+    #Solarized_DarkBackground     = #Solarized_Base03
+    #Solarized_DarkBackgroundAlt  = #Solarized_Base02
+    #Solarized_LightForeground    = #Solarized_Base0
+    #Solarized_LightForegroundAlt = #Solarized_Base1
+    
+  CompilerEndIf
+  
   ;-
   ;- - Color Procedures
   
