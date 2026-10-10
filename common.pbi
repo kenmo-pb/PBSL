@@ -519,6 +519,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "json.pbi"
     IncludeFile "packer.pbi"
     IncludeFile "scintilla.pbi"
+    IncludeFile "ffmpeg.pbi"
     IncludeFile "single-instance.pbi"
   CompilerEndIf
   
