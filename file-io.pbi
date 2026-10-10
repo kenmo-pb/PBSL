@@ -21,6 +21,28 @@ CompilerIf (Not Defined(_PBSL_FileIO_Included, #PB_Constant))
   ;-
   ;- - File Procedures
   
+  Procedure.i CreateEmptyFile(File.s)
+    Protected Result.i = #False
+    Protected FN.i = CreateFile(#PB_Any, File)
+    If (FN)
+      CloseFile(FN)
+      Result = #True
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i TouchFile(File.s, ModifiedDate.i = #PB_Default)
+    Protected Result.i = #False
+    If (File)
+      If (FileSize(File) = #PB_FileSize_Missing)
+        CreateEmptyFile(File)
+      EndIf
+      ModifiedDate = MapPBDefault(ModifiedDate, Date())
+      Result = SetModifiedDate(File, ModifiedDate)
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
   Procedure.i ReadFileInteger(File.s)
     Protected Result.i = 0
     Protected FN.i = ReadFile(#PB_Any, File)

@@ -285,10 +285,13 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
   EndMacro
   
   Macro GetCreatedDate(_File)
-    GetFileDate((_File), #PB_Date_Created)
+    GetFileDate(_File, #PB_Date_Created)
   EndMacro
   Macro GetModifiedDate(_File)
-    GetFileDate((_File), #PB_Date_Modified)
+    GetFileDate(_File, #PB_Date_Modified)
+  EndMacro
+  Macro SetModifiedDate(_File, _Date)
+    SetFileDate(_File, #PB_Date_Modified, (_Date))
   EndMacro
   
   CompilerIf (#IsWindowsBuild)
@@ -303,6 +306,31 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
       (StartsWith(GetFilePart(RemovePathSeparator(_FileOrFolder)), "."))
     EndMacro
   CompilerEndIf
+  
+  Procedure.i IsDirectoryEmpty(Directory.s)
+    Protected Result.i = #False
+    If (Directory)
+      Protected DN.i = ExamineDirectory(#PB_Any, Directory, "")
+      If (DN)
+        Result = #True
+        While (NextDirectoryEntry(DN))
+          If (DirectoryEntryType(DN) = #PB_DirectoryEntry_File)
+            Result = #False
+            Break
+          Else
+            Select (DirectoryEntryName(DN))
+              Case #CurrentDirectory$, #ParentDirectory$
+              Default
+                Result = #False
+                Break
+            EndSelect
+          EndIf
+        Wend
+        FinishDirectory(DN)
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
   
   CompilerIf (#IsWindowsBuild)
     Procedure.i SetHidden(FileOrFolder.s, State.i)
@@ -472,6 +500,21 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Declare.i CreateEmptyFile(File.s)
+  
+  Procedure.i CanWriteToFolder(Folder.s)
+    Protected Result.i = #False
+    If (Folder)
+      Protected TempFile.s = UniqueFileName("temp", "", Folder)
+      If (CreateEmptyFile(TempFile))
+        If (DeleteFile(TempFile))
+          Result = #True
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
   ;-
   ;- Executable Information
   
@@ -620,6 +663,14 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
       CreateDirectoryRecursive(Path)
     EndIf
     ProcedureReturn (Path)
+  EndProcedure
+  
+  Procedure DeleteFolderIfEmpty(Folder.s)
+    If (Folder)
+      If (IsDirectoryEmpty(Folder))
+        DeleteFolder(Folder)
+      EndIf
+    EndIf
   EndProcedure
   
 CompilerEndIf

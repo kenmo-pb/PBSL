@@ -24,8 +24,14 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
   Macro RunProgramWaitHidden(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null)
     RunProgram(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Wait | #PB_Program_Hide)
   EndMacro
+  Macro RunProgramHiddenWait(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null) ; same as above
+    RunProgram(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Wait | #PB_Program_Hide)
+  EndMacro
   Macro RunProgramOutputHidden(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null)
     RunProgramOutput(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Hide)
+  EndMacro
+  Macro RunProgramExitCodeHidden(_ProgramName, _Parameter = "", _WorkingDirectory = "", _Flags = #Null)
+    RunProgramExitCode(_ProgramName, _Parameter, _WorkingDirectory, (_Flags) | #PB_Program_Hide)
   EndMacro
   
   ;-
@@ -71,6 +77,35 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
   
   ;-
   ;- - Process Procedures
+  
+  Procedure.i RunProgramExitCode(ProgramName.s, Parameter.s = "", WorkingDirectory.s = "", Flags.i = #Null)
+    Protected Result.i = $FF
+    If (Flags = #PB_Default)
+      Flags = #Null
+    EndIf
+    If (ProgramName)
+      
+      Flags & ~(#PB_Program_Read | #PB_Program_Write | #PB_Program_Error)
+      Flags |  (#PB_Program_Open)
+      
+      Protected *Prog = RunProgram(ProgramName, Parameter, WorkingDirectory, Flags)
+      If (*Prog)
+        Protected StartTime.i = ElapsedMilliseconds()
+        While (ProgramRunning(*Prog))
+          If (ElapsedMilliseconds() - StartTime > 10*1000)
+            Delay(100)
+          ElseIf (ElapsedMilliseconds() - StartTime > 1*1000)
+            Delay(10)
+          Else
+            Delay(0)
+          EndIf
+        Wend
+        Result = ProgramExitCode(*Prog)
+        CloseProgram(*Prog)
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
   
   Procedure.s RunProgramOutput(ProgramName.s, Parameter.s = "", WorkingDirectory.s = "", Flags.i = #Null)
     Protected Result.s = ""
