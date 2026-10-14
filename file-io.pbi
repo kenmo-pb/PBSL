@@ -169,5 +169,70 @@ CompilerIf (Not Defined(_PBSL_FileIO_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.i CreateFileFromMemory(File.s, *DataPointer, DataBytes.i)
+    Protected Result.i = #False
+    If (File And *DataPointer And (DataBytes >= 0))
+      Protected FN.i = CreateFile(#PB_Any, File)
+      If (FN)
+        If (DataBytes > 0)
+          If (WriteData(FN, *DataPointer, DataBytes) = DataBytes)
+            Result = #True
+          EndIf
+        Else
+          Result = #True
+        EndIf
+        CloseFile(FN)
+        If (Not Result)
+          DeleteFile(File)
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i CreateFileFromBuffer(File.s, *Buffer)
+    Protected Result.i = #False
+    If (File And *Buffer)
+      Result = CreateFileFromMemory(File, *Buffer, MemorySize(*Buffer))
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i ReadFileToMemory(File.s, *DataBuffer, DataBufferBytes.i)
+    Protected Result.i = 0
+    If (File And *DataBuffer And (DataBufferBytes > 0))
+      Protected FN.i = ReadFile(#PB_Any, File)
+      If (FN)
+        Protected Length.i = Lof(FN)
+        If (DataBufferBytes >= Length)
+          If (ReadData(FN, *DataBuffer, Length) = Length)
+            Result = Length
+          EndIf
+        EndIf
+        CloseFile(FN)
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i ReadFileToBuffer(File.s)
+    Protected *Result = #Null
+    If (File)
+      Protected Length.i = FileSize(File)
+      If (Length > 0)
+        *Result = AllocateMemory(Length, #PB_Memory_NoClear)
+        If (*Result)
+          If (ReadFileToMemory(File, *Result, Length) = Length)
+            ; OK
+          Else
+            FreeMemory(*Result)
+            *Result = #Null
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (*Result)
+  EndProcedure
+  
 CompilerEndIf
 ;-

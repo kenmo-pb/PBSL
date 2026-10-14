@@ -88,5 +88,26 @@ CompilerIf (Not Defined(_PBSL_ListsMaps_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  ;-
+  ;- - Map Procedures
+  
+  Procedure.s GetMapString(Map StrMap.s(), Key.s, DefaultValue.s = "", NoCase.i = #False)
+    Protected Result.s = DefaultValue
+    If (NoCase And (Key <> ""))
+      Key = LCase(Key)
+      ForEach StrMap()
+        If (LCase(MapKey(StrMap())) = Key)
+          Result = StrMap()
+          Break
+        EndIf
+      Next
+    Else
+      If (FindMapElement(StrMap(), Key))
+        Result = StrMap()
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
 CompilerEndIf
 ;-

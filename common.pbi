@@ -397,6 +397,10 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     GetUserDirectory(#PB_Directory_Videos)
   EndMacro
   
+  Macro AllocateMemoryNoClear(_Size)
+    AllocateMemory(_Size, #PB_Memory_NoClear)
+  EndMacro
+  
   ;-
   ;- - Common Procedures
   

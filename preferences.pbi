@@ -60,5 +60,31 @@ CompilerIf (Not Defined(_PBSL_Preferences_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.i ReadPreferencesToMap(File.s, Map StrMap.s(), GroupDelimiter.s = ".", LCaseKeys.i = #False)
+    Protected Result.i = #False
+    ClearMap(StrMap())
+    If (OpenPreferences(File))
+      If (ExaminePreferenceGroups())
+        Repeat
+          If (ExaminePreferenceKeys())
+            While (NextPreferenceKey())
+              Protected Key.s = PreferenceKeyName()
+              If (PreferenceGroupName())
+                Key = PreferenceGroupName() + GroupDelimiter + Key
+              EndIf
+              If (LCaseKeys)
+                Key = LCase(Key)
+              EndIf
+              StrMap(Key) = PreferenceKeyValue()
+            Wend
+          EndIf
+        Until (Not NextPreferenceGroup())
+        Result = #True
+      EndIf
+      ClosePreferences()
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
 CompilerEndIf
 ;-
