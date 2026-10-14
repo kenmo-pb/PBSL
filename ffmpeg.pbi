@@ -12,7 +12,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
   
   ;- - FFmpeg Constants (Private)
   
-  #_FFmpeg_DefaultExecutable = WLMO("ffmpeg", "ffmpeg", "ffmpeg", "ffmpeg")
+  #_FFmpeg_DefaultExecutable = WindowsElse("ffmpeg", "ffmpeg")
   
   #_FFmpeg_SuccessCode = $00
   
@@ -53,6 +53,12 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
       Params + " -n"
     EndIf
   EndMacro
+  Macro _FFmpegCopyVideoCodec()
+    Params + " -c:v copy"
+  EndMacro
+  Macro _FFmpegCopyAudioCodec()
+    Params + " -c:a copy"
+  EndMacro
   Macro _FFmpegAddOutputFile(_File)
     Params + " " + Quote(_File)
   EndMacro
@@ -61,14 +67,14 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     ;Debug Params
   EndMacro
   
-  Macro _FFmpegPushIfOverwritingSelf(_InputFile, _OutputFile)
-    If (_InputFile = _OutputFile)
-      _OutputFile = _FFmpegPushTempFile(_OutputFile)
+  Macro _FFmpegPushIfOverwritingSelf(_InputFile, _OutputFileVar)
+    If (_InputFile = _OutputFileVar)
+      _OutputFileVar = _FFmpegPushTempFile(_OutputFileVar)
     EndIf
   EndMacro
   
-  Macro _FFmpegPopIfOverwritingSelf(_OutputFile)
-    _OutputFile = _FFmpegPopTempFile(_OutputFile)
+  Macro _FFmpegPopIfOverwritingSelf(_OutputFileVar)
+    _OutputFileVar = _FFmpegPopTempFile(_OutputFileVar)
   EndMacro
   
   ;-
@@ -91,13 +97,13 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     Protected Result.i = #False
     If (Executable)
       ;If (FileExists(Executable)) ; if we require this, then 'ffmpeg' found via $PATH won't work
-        Protected Output.s = RunProgramOutputHidden(Executable, "-version", GetCurrentDirectory())
-        If (Output)
-          _FFmpegVersion = Between(Output, "version ", " Copyright")
-          If (_FFmpegVersion Or (#True))
-            Result = #True
-          EndIf
+      Protected Output.s = RunProgramOutputHidden(Executable, "-version", GetCurrentDirectory())
+      If (Output)
+        _FFmpegVersion = Between(Output, "version ", " Copyright")
+        If (_FFmpegVersion Or (#True))
+          Result = #True
         EndIf
+      EndIf
       ;EndIf
     EndIf
     ProcedureReturn (Result)
@@ -325,7 +331,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
           _FFmpegAddOutputParams()
           Params + " -s " + Str(Width) + "x" + Str(Height)
           If (Not SeemsImageFile(InputFile))
-            Params + " -c:a copy"
+            _FFmpegCopyAudioCodec()
           EndIf
           _FFmpegAddOutputFile(OutputFile)
           _FFmpegAddFinalParams()
@@ -359,7 +365,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
           EndIf
           Params + " -filter:v scale=" + Str(Width) + ":-" + Str(_FFmpegPixelMultiple)
           If (Not SeemsImageFile(InputFile))
-            Params + " -c:a copy"
+            _FFmpegCopyAudioCodec()
           EndIf
           _FFmpegAddOutputFile(OutputFile)
           _FFmpegAddFinalParams()
@@ -393,7 +399,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
           EndIf
           Params + " -filter:v scale=-" + Str(_FFmpegPixelMultiple) + ":" + Str(Height)
           If (Not SeemsImageFile(InputFile))
-            Params + " -c:a copy"
+            _FFmpegCopyAudioCodec()
           EndIf
           _FFmpegAddOutputFile(OutputFile)
           _FFmpegAddFinalParams()
@@ -428,6 +434,89 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     ProcedureReturn (ResizeMediaFileToHeight(InputFile, Height, OutputFile))
   EndProcedure
   
+  Procedure.i NormalizeLoudness(InputFile.s, TargetLUFS.d = -16.0, OutputFile.s = "")
+    Protected Result.i = #False
+    OutputFile = MapEmptyString(OutputFile, InputFile)
+    If (InputFile)
+      If (_FFmpegOverwrite Or (InputFile = OutputFile) Or (Not FileExists(OutputFile)))
+        If (_FFmpegInitInternal())
+          _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
+          Protected Params.s
+          If (#True)
+            Params + " -hide_banner"
+          EndIf
+          _FFmpegAddInputFile(InputFile)
+          ; https://k.ylo.ph/2016/04/04/loudnorm.html
+          Params + " -af loudnorm=I=" + StrD(TargetLUFS, 1) + ":TP=-1.5:LRA=11:print_format=json"
+          Params + " -f null -"
+          Protected Text.s = RunProgramOutputHidden(_FFmpegExe, Params, GetCurrentDirectory())
+          Text = After(Text, "Parsed_loudnorm")
+          Text = Between(Text, "{", "}")
+          Protected MeasuredI.s, MeasuredLRA.s, MeasuredTP.s, MeasuredThresh.s, Offset.s
+          If (Text)
+            Text = "{" + Text + "}"
+            ;Debug Text
+            Protected JSON.i = ParseJSON(#PB_Any, Text)
+            If (JSON)
+              Protected *Obj = JSONValue(JSON)
+              If (*Obj And (JSONType(*Obj) = #PB_JSON_Object))
+                MeasuredI      = GetJSONString(GetJSONMember(*Obj, "input_i"))
+                MeasuredLRA    = GetJSONString(GetJSONMember(*Obj, "input_lra"))
+                MeasuredTP     = GetJSONString(GetJSONMember(*Obj, "input_tp"))
+                MeasuredThresh = GetJSONString(GetJSONMember(*Obj, "input_thresh"))
+                Offset         = GetJSONString(GetJSONMember(*Obj, "target_offset"))
+                Result = #True
+              EndIf
+              FreeJSON(JSON)
+            EndIf
+          EndIf
+          If (Result)
+            Result = #False
+            Params = ""
+            _FFmpegAddInputParams()
+            _FFmpegAddInputFile(InputFile)
+            _FFmpegAddOutputParams()
+            Params + " -af loudnorm=I=" + StrD(TargetLUFS, 1) + ":TP=-1.5:LRA=11"
+            Params + ":measured_I="      + MeasuredI
+            Params + ":measured_LRA="    + MeasuredLRA
+            Params + ":measured_TP="     + MeasuredTP
+            Params + ":measured_thresh=" + MeasuredThresh
+            Params + ":offset="          + Offset
+            If (#True)
+              Params + ":linear=true"
+            EndIf
+            If (#True)
+              Params + ":print_format=summary"
+            EndIf
+            Protected AudioRateStr.s = "48k"
+            If (AudioRateStr <> "")
+              Params + " -ar " + AudioRateStr
+            EndIf
+            If (Not SeemsAudioFile(InputFile))
+              _FFmpegCopyVideoCodec()
+            EndIf
+            _FFmpegAddOutputFile(OutputFile)
+            _FFmpegAddFinalParams()
+            Protected ExitCode.i = _FFmpegExecute()
+            _FFmpegPopIfOverwritingSelf(OutputFile)
+            If (ExitCode = #_FFmpeg_SuccessCode)
+              If (FileExists(OutputFile))
+                Result = #True
+              EndIf
+            EndIf
+          Else
+            _FFmpegPopIfOverwritingSelf(OutputFile)
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i LoudNorm(InputFile.s, TargetLUFS.d = -16.0, OutputFile.s = "")
+    ProcedureReturn (NormalizeLoudness(InputFile, TargetLUFS, OutputFile))
+  EndProcedure
+  
   Procedure.i RunFFmpegCustomFilter(InputFile.s, VideoFilter.s, AudioFilter.s, OutputFile.s = "")
     Protected Result.i = #False
     OutputFile = MapEmptyString(OutputFile, InputFile)
@@ -448,7 +537,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
               Params + Quote(VideoFilter)
             EndIf
           Else
-            Params + " -c:v copy"
+            _FFmpegCopyVideoCodec()
           EndIf
           AudioFilter = RemoveString(VideoFilter, "-filter:a", #PB_String_NoCase)
           If (AudioFilter)
@@ -459,7 +548,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
               Params + Quote(AudioFilter)
             EndIf
           Else
-            Params + " -c:a copy"
+            _FFmpegCopyAudioCodec()
           EndIf
           _FFmpegAddOutputFile(OutputFile)
           _FFmpegAddFinalParams()
