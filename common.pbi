@@ -509,6 +509,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   
   CompilerIf (#PBSL_IncludeAll)
     IncludeFile "os-version.pbi"
+    IncludeFile "base64.pbi"
     IncludeFile "preferences.pbi"
     IncludeFile "gadget-sizes.pbi"
     IncludeFile "list-requester.pbi"
