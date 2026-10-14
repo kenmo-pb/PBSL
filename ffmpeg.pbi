@@ -26,7 +26,9 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
   Global _FFmpegExe.s     = #_FFmpeg_DefaultExecutable
   Global _FFmpegVersion.s = ""
   
-  Global _FFmpegOverwrite.i = #True
+  Global _FFmpegOverwrite.i = #False
+  
+  Global NewMap _FFmpegMetadata.s()
   
   Threaded _FFmpegTempFile.s = ""
   Threaded _FFmpegDestinationFile.s = ""
@@ -58,6 +60,9 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
   EndMacro
   Macro _FFmpegCopyAudioCodec()
     Params + " -c:a copy"
+  EndMacro
+  Macro _FFmpegAddMetadataParams()
+    Params + _FFmpegMetadataParamsString()
   EndMacro
   Macro _FFmpegAddOutputFile(_File)
     Params + " " + Quote(_File)
@@ -128,11 +133,47 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
-  Procedure.s _FFmpegGetFileInfo(File.s)
+  Procedure.s _FFmpegGetFileInfo(File.s, VideoOnly.i = #False)
     Protected Result.s = ""
     If (File And FileExists(File))
       If (_FFmpegInitInternal())
-        Result = RunProgramOutputHidden(_FFmpegExe, "-i " + Quote(File), GetCurrentDirectory())
+        Protected Params.s = ""
+        If (VideoOnly)
+          Params + " -an"
+        EndIf
+        Params + " -i " + Quote(File)
+        Result = RunProgramOutputHidden(_FFmpegExe, Params, GetCurrentDirectory())
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i _FFmpegGetFileVideoDimension(File.s, GetHeight.i)
+    Protected Result.i = 0
+    If (File)
+      Protected Output.s = _FFmpegGetFileInfo(File, #True)
+      Output = After(Output, "Input #")
+      If (Output)
+        Output = After(Output, "Video:")
+        If (Output)
+          Protected N.i = 1 + CountString(Output, ",")
+          Protected i.i
+          For i = 1 To N
+            Protected Term.s = Trim(StringField(Output, i, ","))
+            If (CountString(Term, "x") = 1)
+              Protected Width.i  = Val(StringField(Term, 1, "x"))
+              Protected Height.i = Val(StringField(Term, 2, "x"))
+              If ((Width > 0) And (Height > 0))
+                If (GetHeight)
+                  Result = Height
+                Else
+                  Result = Width
+                EndIf
+                Break
+              EndIf
+            EndIf
+          Next i
+        EndIf
       EndIf
     EndIf
     ProcedureReturn (Result)
@@ -159,6 +200,34 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     ProcedureReturn (OutputFile)
   EndProcedure
   
+  Procedure.s _FFmpegEscapeAndQuote(Param.s)
+    Protected Result.s = ""
+    If (#True)
+      Param = ReplaceString(Param, #DQ$, #SQ$)
+    EndIf
+    Result = Quote(Param)
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s _FFmpegMetadataParamsString()
+    Protected Result.s = ""
+    ; https://gist.github.com/eyecatchup/0757b3d8b989fe433979db2ea7d95a01
+    ForEach _FFmpegMetadata()
+      If (MapKey(_FFmpegMetadata()))
+        Result + " -metadata " + MapKey(_FFmpegMetadata()) + "=" + _FFmpegEscapeAndQuote(_FFmpegMetadata())
+      EndIf
+    Next
+    If (Result)
+      If (#True)
+        Result + " -id3v2_version 3"
+      EndIf
+      If (#True)
+        Result + " -write_id3v1 1"
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
   ;-
   ;- - FFmpeg Procedures (Public)
   
@@ -175,7 +244,57 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     ProcedureReturn ("")
   EndProcedure
   
-  ;-
+  Procedure SetFFmpegOverwrite(State.i)
+    _FFmpegOverwrite = Bool(State)
+  EndProcedure
+  
+  Procedure.i RunFFmpegCustomFilter(InputFile.s, VideoFilter.s, AudioFilter.s, OutputFile.s = "")
+    Protected Result.i = #False
+    OutputFile = MapEmptyString(OutputFile, InputFile)
+    If (InputFile)
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
+        If (_FFmpegInitInternal())
+          _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
+          Protected Params.s
+          _FFmpegAddInputParams()
+          _FFmpegAddInputFile(InputFile)
+          _FFmpegAddOutputParams()
+          VideoFilter = RemoveString(VideoFilter, "-filter:v", #PB_String_NoCase)
+          If (VideoFilter)
+            Params + " -filter:v "
+            If (Asc(VideoFilter) = #DQ)
+              Params + VideoFilter
+            Else
+              Params + Quote(VideoFilter)
+            EndIf
+          Else
+            _FFmpegCopyVideoCodec()
+          EndIf
+          AudioFilter = RemoveString(VideoFilter, "-filter:a", #PB_String_NoCase)
+          If (AudioFilter)
+            Params + " -filter:a "
+            If (Asc(AudioFilter) = #DQ)
+              Params + AudioFilter
+            Else
+              Params + Quote(AudioFilter)
+            EndIf
+          Else
+            _FFmpegCopyAudioCodec()
+          EndIf
+          _FFmpegAddOutputFile(OutputFile)
+          _FFmpegAddFinalParams()
+          Protected ExitCode.i = _FFmpegExecute()
+          _FFmpegPopIfOverwritingSelf(OutputFile)
+          If (ExitCode = #_FFmpeg_SuccessCode)
+            If (FileExists(OutputFile))
+              Result = #True
+            EndIf
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
   
   CompilerIf (Not Defined(SeemsAudioFile, #PB_Procedure))
     Procedure.i SeemsAudioFile(FileOrExtension.s)
@@ -227,6 +346,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
   CompilerEndIf
   
   ;-
+  ;- - Get Media Info
   
   Procedure.i GetMediaDurationMilliseconds(File.s)
     Protected Result.i = 0
@@ -260,10 +380,65 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     ProcedureReturn (0.001 * GetMediaDurationMilliseconds(File))
   EndProcedure
   
-  ;-
+  Procedure.i GetMediaWidth(File.s)
+    ProcedureReturn (_FFmpegGetFileVideoDimension(File, #False))
+  EndProcedure
   
-  Procedure SetFFmpegOverwrite(State.i)
-    _FFmpegOverwrite = Bool(State)
+  Procedure.i GetMediaHeight(File.s)
+    ProcedureReturn (_FFmpegGetFileVideoDimension(File, #True))
+  EndProcedure
+  
+  ;-
+  ;- - General Processing
+  
+  Procedure.i _FFmpegTemplateIfCanOverwriteSelf(InputFile.s, OutputFile.s = "")
+    Protected Result.i = #False
+    OutputFile = MapEmptyString(OutputFile, InputFile)
+    If (InputFile)
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
+        If (_FFmpegInitInternal())
+          _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
+          Protected Params.s
+          _FFmpegAddInputParams()
+          _FFmpegAddInputFile(InputFile)
+          _FFmpegAddOutputParams()
+          _FFmpegAddOutputFile(OutputFile)
+          _FFmpegAddFinalParams()
+          Protected ExitCode.i = _FFmpegExecute()
+          _FFmpegPopIfOverwritingSelf(OutputFile)
+          If (ExitCode = #_FFmpeg_SuccessCode)
+            If (FileExists(OutputFile))
+              Result = #True
+            EndIf
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i _FFmpegTemplateIfCannotOverwriteSelf(InputFile.s, OutputFile.s)
+    Protected Result.i = #False
+    If (InputFile And OutputFile)
+      If (InputFile <> OutputFile)
+        If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
+          If (_FFmpegInitInternal())
+            Protected Params.s
+            _FFmpegAddInputParams()
+            _FFmpegAddInputFile(InputFile)
+            _FFmpegAddOutputParams()
+            _FFmpegAddOutputFile(OutputFile)
+            _FFmpegAddFinalParams()
+            If (_FFmpegExecute() = #_FFmpeg_SuccessCode)
+              If (FileExists(OutputFile))
+                Result = #True
+              EndIf
+            EndIf
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
   EndProcedure
   
   Procedure.i ConvertMediaFile(InputFile.s, OutputFile.s)
@@ -291,6 +466,99 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     EndIf
     ProcedureReturn (Result)
   EndProcedure
+  
+  Procedure.i ResetMediaMetadataStrings()
+    ClearMap(_FFmpegMetadata())
+    ProcedureReturn (#True)
+  EndProcedure
+  
+  Procedure.i SetMediaMetadataString(TagName.s, TagValue.s)
+    Protected Result.i = #False
+    TagName = Trim(TagName)
+    If (TagName)
+      If (TagValue)
+        AddMapElement(_FFmpegMetadata(), TagName)
+        _FFmpegMetadata() = TagValue
+      Else
+        DeleteMapElement(_FFmpegMetadata(), TagName)
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i WriteMediaFileMetadata(InputFile.s, OutputFile.s = "", PreserveExistingTags.i = #False)
+    Protected Result.i = #False
+    OutputFile = MapEmptyString(OutputFile, InputFile)
+    If (InputFile)
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
+        If (_FFmpegInitInternal())
+          _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
+          Protected Params.s
+          _FFmpegAddInputParams()
+          _FFmpegAddInputFile(InputFile)
+          _FFmpegAddOutputParams()
+          _FFmpegCopyAudioCodec()
+          _FFmpegCopyVideoCodec()
+          If (Not PreserveExistingTags)
+            Params + " -map_metadata -1"
+            If (#False)
+              Params + " -map_metadata:s:a -1"
+              Params + " -map_metadata:s:v -1"
+            EndIf
+          EndIf
+          _FFmpegAddMetadataParams()
+          _FFmpegAddOutputFile(OutputFile)
+          _FFmpegAddFinalParams()
+          Debug Params
+          Protected ExitCode.i = _FFmpegExecute()
+          _FFmpegPopIfOverwritingSelf(OutputFile)
+          If (ExitCode = #_FFmpeg_SuccessCode)
+            If (FileExists(OutputFile))
+              Result = #True
+            EndIf
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i RemoveMediaFileMetadata(InputFile.s, OutputFile.s = "")
+    Protected Result.i = #False
+    OutputFile = MapEmptyString(OutputFile, InputFile)
+    If (InputFile)
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
+        If (_FFmpegInitInternal())
+          _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
+          Protected Params.s
+          _FFmpegAddInputParams()
+          _FFmpegAddInputFile(InputFile)
+          _FFmpegAddOutputParams()
+          _FFmpegCopyAudioCodec()
+          _FFmpegCopyVideoCodec()
+          ; https://gist.github.com/eyecatchup/0757b3d8b989fe433979db2ea7d95a01
+          Params + " -map_metadata -1"
+          If (#True)
+            Params + " -map_metadata:s:a -1"
+            Params + " -map_metadata:s:v -1"
+          EndIf
+          _FFmpegAddOutputFile(OutputFile)
+          _FFmpegAddFinalParams()
+          Protected ExitCode.i = _FFmpegExecute()
+          _FFmpegPopIfOverwritingSelf(OutputFile)
+          If (ExitCode = #_FFmpeg_SuccessCode)
+            If (FileExists(OutputFile))
+              Result = #True
+            EndIf
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  ;-
+  ;- - Video Processing
   
   Procedure.i ExtractFrameFromVideo(InputVideoFile.s, OutputImageFile.s, Seconds.d = 0.000)
     Protected Result.i = #False
@@ -321,7 +589,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     Protected Result.i = #False
     OutputFile = MapEmptyString(OutputFile, InputFile)
     If (InputFile And (Width > 0) And (Height > 0))
-      If (_FFmpegOverwrite Or (InputFile = OutputFile) Or (Not FileExists(OutputFile)))
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
         If (_FFmpegInitInternal())
           _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
           Protected Params.s
@@ -352,7 +620,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     Protected Result.i = #False
     OutputFile = MapEmptyString(OutputFile, InputFile)
     If (InputFile And (Width > 0))
-      If (_FFmpegOverwrite Or (InputFile = OutputFile) Or (Not FileExists(OutputFile)))
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
         If (_FFmpegInitInternal())
           _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
           Protected Params.s
@@ -386,7 +654,7 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     Protected Result.i = #False
     OutputFile = MapEmptyString(OutputFile, InputFile)
     If (InputFile And (Height > 0))
-      If (_FFmpegOverwrite Or (InputFile = OutputFile) Or (Not FileExists(OutputFile)))
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
         If (_FFmpegInitInternal())
           _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
           Protected Params.s
@@ -434,11 +702,42 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
     ProcedureReturn (ResizeMediaFileToHeight(InputFile, Height, OutputFile))
   EndProcedure
   
+  ;-
+  ;- - Audio Processing
+  
+  Procedure.i RemoveAudio(InputFile.s, OutputFile.s = "")
+    Protected Result.i = #False
+    OutputFile = MapEmptyString(OutputFile, InputFile)
+    If (InputFile)
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
+        If (_FFmpegInitInternal())
+          _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
+          Protected Params.s
+          _FFmpegAddInputParams()
+          Params + " -an"
+          _FFmpegAddInputFile(InputFile)
+          _FFmpegAddOutputParams()
+          _FFmpegCopyVideoCodec()
+          _FFmpegAddOutputFile(OutputFile)
+          _FFmpegAddFinalParams()
+          Protected ExitCode.i = _FFmpegExecute()
+          _FFmpegPopIfOverwritingSelf(OutputFile)
+          If (ExitCode = #_FFmpeg_SuccessCode)
+            If (FileExists(OutputFile))
+              Result = #True
+            EndIf
+          EndIf
+        EndIf
+      EndIf
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
   Procedure.i NormalizeLoudness(InputFile.s, TargetLUFS.d = -16.0, OutputFile.s = "")
     Protected Result.i = #False
     OutputFile = MapEmptyString(OutputFile, InputFile)
     If (InputFile)
-      If (_FFmpegOverwrite Or (InputFile = OutputFile) Or (Not FileExists(OutputFile)))
+      If (_FFmpegOverwrite Or (Not FileExists(OutputFile)))
         If (_FFmpegInitInternal())
           _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
           Protected Params.s
@@ -515,54 +814,6 @@ CompilerIf (Not Defined(_PBSL_FFmpeg_Included, #PB_Constant))
   
   Procedure.i LoudNorm(InputFile.s, TargetLUFS.d = -16.0, OutputFile.s = "")
     ProcedureReturn (NormalizeLoudness(InputFile, TargetLUFS, OutputFile))
-  EndProcedure
-  
-  Procedure.i RunFFmpegCustomFilter(InputFile.s, VideoFilter.s, AudioFilter.s, OutputFile.s = "")
-    Protected Result.i = #False
-    OutputFile = MapEmptyString(OutputFile, InputFile)
-    If (InputFile)
-      If (_FFmpegOverwrite Or (InputFile = OutputFile) Or (Not FileExists(OutputFile)))
-        If (_FFmpegInitInternal())
-          _FFmpegPushIfOverwritingSelf(InputFile, OutputFile)
-          Protected Params.s
-          _FFmpegAddInputParams()
-          _FFmpegAddInputFile(InputFile)
-          _FFmpegAddOutputParams()
-          VideoFilter = RemoveString(VideoFilter, "-filter:v", #PB_String_NoCase)
-          If (VideoFilter)
-            Params + " -filter:v "
-            If (Asc(VideoFilter) = #DQ)
-              Params + VideoFilter
-            Else
-              Params + Quote(VideoFilter)
-            EndIf
-          Else
-            _FFmpegCopyVideoCodec()
-          EndIf
-          AudioFilter = RemoveString(VideoFilter, "-filter:a", #PB_String_NoCase)
-          If (AudioFilter)
-            Params + " -filter:a "
-            If (Asc(AudioFilter) = #DQ)
-              Params + AudioFilter
-            Else
-              Params + Quote(AudioFilter)
-            EndIf
-          Else
-            _FFmpegCopyAudioCodec()
-          EndIf
-          _FFmpegAddOutputFile(OutputFile)
-          _FFmpegAddFinalParams()
-          Protected ExitCode.i = _FFmpegExecute()
-          _FFmpegPopIfOverwritingSelf(OutputFile)
-          If (ExitCode = #_FFmpeg_SuccessCode)
-            If (FileExists(OutputFile))
-              Result = #True
-            EndIf
-          EndIf
-        EndIf
-      EndIf
-    EndIf
-    ProcedureReturn (Result)
   EndProcedure
   
 CompilerEndIf
