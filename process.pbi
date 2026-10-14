@@ -75,6 +75,17 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
     EndIf
   EndProcedure
   
+  Procedure AddEnvironmentPath(Path.s)
+    Path = Trim(Path)
+    If (Path)
+      CompilerIf (#IsWindowsBuild)
+        SetEnvironmentVariable("PATH", GetEnvironmentVariable("PATH") + ";" + Path)
+      CompilerElse
+        SetEnvironmentVariable("PATH", GetEnvironmentVariable("PATH") + ":" + Path)
+      CompilerEndIf
+    EndIf
+  EndProcedure
+  
   ;-
   ;- - Process Procedures
   
@@ -290,6 +301,17 @@ CompilerIf (Not Defined(_PBSL_Process_Included, #PB_Constant))
       CompilerElse
         RunProgram("open", Quote(URL), "")
       CompilerEndIf
+    EndIf
+  EndProcedure
+  
+  Procedure LaunchFileAsURL(File.s)
+    If (File)
+      If (FindString(File, "://"))
+        File = After(File, "://")
+      EndIf
+      If (FileSize(File) <> #PB_FileSize_Missing)
+        LaunchURL("file://" + File)
+      EndIf
     EndIf
   EndProcedure
   

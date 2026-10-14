@@ -218,6 +218,18 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     EndIf
   EndProcedure
   
+  Procedure.i ParseBool(String.s)
+    Protected Result.i
+    Select (LCase(Trim(String)))
+      Case "1", "t", "true", "y", "yes", "on", "en", "enable", "enabled"
+        Result = #True
+      Case "0", "f", "false", "n", "no", "off", "dis", "disable", "disabled"
+        Result = #False
+      Default
+    EndSelect
+    ProcedureReturn (Result)
+  EndProcedure
+  
   Procedure.s RepeatString(String.s, N.i)
     Protected Result.s = ""
     If (N >= 1)
@@ -1030,8 +1042,8 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
         Case 'a' To 'z', 'A' To 'Z', '0' To '9', '-', '_', '.';, '~'
           Result + Chr(*C\c)
         Default
-          If (*C\c = $20) ; space
-                          ;Result + "%20"
+          If (*C\c = #SP)
+            ;Result + "%20"
             Result + "+"
           ElseIf (*C\c <= $7F) ; single-byte char
             Result + "%" + Hex8(*C\c)

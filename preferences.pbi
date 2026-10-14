@@ -16,16 +16,11 @@ CompilerIf (Not Defined(_PBSL_Preferences_Included, #PB_Constant))
   EndProcedure
   
   Procedure.i ReadPreferenceBool(Key.s, DefaultValue.i)
-    Protected Result.i
-    Select (LCase(Trim(ReadPreferenceString(Key, ""))))
-      Case "1", "t", "true", "y", "yes", "on", "en", "enable", "enabled"
-        Result = #True
-      Case "0", "f", "false", "n", "no", "off", "dis", "disable", "disabled"
-        Result = #False
-      Default
-        Result = DefaultValue
-    EndSelect
-    ProcedureReturn (Result)
+    Protected Text.s = LCase(Trim(ReadPreferenceString(Key, "")))
+    If (Text)
+      ProcedureReturn (ParseBool(Text))
+    EndIf
+    ProcedureReturn (DefaultValue)
   EndProcedure
   
   Procedure WritePreferenceRGB(Key.s, Color.i, ColorFormat.i = #ColorFormat_Integer)

@@ -11,6 +11,16 @@ CompilerIf (Not Defined(_PBSL_FileIO_Included, #PB_Constant))
   
   ;- - File Macros
   
+  Macro ReadFileAny(_File, _Flags = #Null)
+    ReadFile(#PB_Any, _File, (_Flags))
+  EndMacro
+  Macro CreateFileAny(_File, _Flags = #Null)
+    CreateFile(#PB_Any, _File, (_Flags))
+  EndMacro
+  Macro OpenFileAny(_File, _Flags = #Null)
+    OpenFile(#PB_Any, _File, (_Flags))
+  EndMacro
+  
   Macro WriteStringCRLF(_File, _Text, _Format = #DefaultIOStringFormat)
     WriteString((_File), _Text + #CRLF$, (_Format))
   EndMacro
