@@ -493,8 +493,8 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   CompilerIf (#True)
     IncludeFile "pb-compatibility.pbi"
     IncludeFile "math.pbi"
-    IncludeFile "lists-maps.pbi"
     IncludeFile "strings.pbi"
+    IncludeFile "lists-maps.pbi"
     IncludeFile "paths.pbi"
     IncludeFile "date-time.pbi"
     IncludeFile "file-io.pbi"

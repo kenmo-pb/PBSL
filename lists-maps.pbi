@@ -88,6 +88,21 @@ CompilerIf (Not Defined(_PBSL_ListsMaps_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.i RemoveStringListByPattern(List StrList.s(), Pattern.s, CaseInsensitive.i = #False, Invert.i = #False)
+    Protected Removed.i = 0
+    ForEach StrList()
+      If (StringMatchesPattern(StrList(), Pattern, CaseInsensitive) XOr (Invert))
+        DeleteElement(StrList())
+        Removed + 1
+      EndIf
+    Next
+    ProcedureReturn (Removed)
+  EndProcedure
+  
+  Procedure.i FilterStringListByPattern(List StrList.s(), Pattern.s, CaseInsensitive.i = #False)
+    ProcedureReturn (RemoveStringListByPattern(StrList(), Pattern, CaseInsensitive, #True))
+  EndProcedure
+  
   ;-
   ;- - Map Procedures
   
