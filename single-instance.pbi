@@ -10,15 +10,35 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
   #_PBSL_SingleInstance_Included = #True
   
   ;- - Single Instance Constants
-  #_PBSL_InstanceMethod_None         = $00
-  #_PBSL_InstanceMethod_WindowsMutex = $01
-  #_PBSL_InstanceMethod_LinuxPIDFile = $02
-  #_PBSL_InstanceMethod_UseMapFile   = $10
-  ;#_PBSL_InstanceMethod_UseCopyData  = $20 ; not yet implemented
+  #_PBSL_InstanceMethod_None           = $00
+  #_PBSL_InstanceMethod_WindowsMutex   = $01
+  #_PBSL_InstanceMethod_LinuxPIDFile   = $02
+  #_PBSL_InstanceMethod_MonitorMapFile = $04
+  #_PBSL_InstanceMethod_UseMapFile     = $10
+  ;#_PBSL_InstanceMethod_UseCopyData    = $20 ; not yet implemented
   
-  #_PBSL_InstanceMethod = WLMO(#_PBSL_InstanceMethod_WindowsMutex | #_PBSL_InstanceMethod_UseMapFile, #_PBSL_InstanceMethod_LinuxPIDFile | #_PBSL_InstanceMethod_UseMapFile, #_PBSL_InstanceMethod_None, #_PBSL_InstanceMethod_None)
+  CompilerIf (#IsWindowsBuild)
+    #_PBSL_InstanceMethod = #_PBSL_InstanceMethod_WindowsMutex | #_PBSL_InstanceMethod_UseMapFile
+    
+  CompilerElseIf (#IsLinuxBuild)
+    CompilerIf (#IsGTK3Subsystem)
+      ; https://github.com/fantaisie-software/purebasic/commit/d24a8a286a98bf7e48a1295bbc86dbff4e85179f
+      #_PBSL_InstanceMethod = #_PBSL_InstanceMethod_LinuxPIDFile | #_PBSL_InstanceMethod_UseMapFile | #_PBSL_InstanceMethod_MonitorMapFile
+    CompilerElseIf (#IsGTK2Subsystem)
+      #_PBSL_InstanceMethod = #_PBSL_InstanceMethod_LinuxPIDFile | #_PBSL_InstanceMethod_UseMapFile
+    CompilerElse
+      #_PBSL_InstanceMethod = #_PBSL_InstanceMethod_None
+    CompilerEndIf
+    
+  CompilerElse
+    #_PBSL_InstanceMethod = #_PBSL_InstanceMethod_None
+  CompilerEndIf
   
-  #_PBSL_InstanceTimeoutMS = 1000
+  CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_MonitorMapFile)
+    #_PBSL_InstanceTimeoutMS = 3 * 1000
+  CompilerElse
+    #_PBSL_InstanceTimeoutMS = 1 * 1000
+  CompilerEndIf
   
   ;-
   ;- - Single Instance Globals
@@ -45,6 +65,13 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
   
   CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_UseMapFile)
     Global _PBSL_InstanceMapFile.s = GetTemporaryDirectory() + _PBSL_MutexString + ".map"
+  CompilerEndIf
+  
+  CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_MonitorMapFile)
+    Global _PBSL_MapMonitorThread.i = #Null
+    CompilerIf (Not Defined(_PBSL_MonitorMapIntervalMS, #PB_Constant))
+      #_PBSL_MonitorMapIntervalMS = 500
+    CompilerEndIf
   CompilerEndIf
   
   Procedure.i InstanceAlreadyRunning()
@@ -86,14 +113,16 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
   CompilerEndIf
   
   CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_WindowsMutex)
-    Procedure.i _PBSL_InstanceWindowCallback(hWnd.i, uMsg.i, wParam.i, lParam.i)
-      If (uMsg = _PBSL_RegisteredMessage)
-        CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_UseMapFile)
-          _PBSL_ReadInstanceMapFile()
-        CompilerEndIf
-      EndIf
-      ProcedureReturn (#PB_ProcessPureBasicEvents)
-    EndProcedure
+    CompilerIf (Not (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_MonitorMapFile))
+      Procedure.i _PBSL_InstanceWindowCallback(hWnd.i, uMsg.i, wParam.i, lParam.i)
+        If (uMsg = _PBSL_RegisteredMessage)
+          CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_UseMapFile)
+            _PBSL_ReadInstanceMapFile()
+          CompilerEndIf
+        EndIf
+        ProcedureReturn (#PB_ProcessPureBasicEvents)
+      EndProcedure
+    CompilerEndIf
   CompilerEndIf
   
   CompilerIf (#IsGTK2Subsystem)
@@ -143,6 +172,23 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
     
   CompilerEndIf ; #GTK2
   
+  CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_MonitorMapFile)
+    Procedure _PBSL_InstanceMapMonitorThread(*UserData)
+      Delay(1 * 1000)
+      Protected LastCheck.q = 0
+      While (_PBSL_MapMonitorThread)
+        If (ElapsedMilliseconds() - LastCheck > #_PBSL_MonitorMapIntervalMS)
+          If (FileExists(_PBSL_InstanceMapFile))
+            _PBSL_ReadInstanceMapFile()
+          EndIf
+          LastCheck = ElapsedMilliseconds()
+        Else
+          Delay(10)
+        EndIf
+      Wend
+    EndProcedure
+  CompilerEndIf
+  
   Procedure _PBSL_InitInstance()
     CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_WindowsMutex)
       _PBSL_RegisteredMessage = RegisterWindowMessage_(@_PBSL_MutexString)
@@ -153,12 +199,18 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
         _PBSL_IsAlreadyRunning = #True
       Else
         _PBSL_IsAlreadyRunning = #False
-        If (Not _PBSL_InstanceWindow)
-          _PBSL_InstanceWindow = OpenWindow(#PB_Any, 0, 0, 100, 100, "", #PB_Window_BorderLess | #PB_Window_NoGadgets | #PB_Window_NoActivate | #PB_Window_Invisible)
-          If (_PBSL_InstanceWindow)
-            SetWindowCallback(@_PBSL_InstanceWindowCallback(), _PBSL_InstanceWindow)
+        CompilerIf (Not (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_MonitorMapFile))
+          If (Not _PBSL_InstanceWindow)
+            Protected PrevGadgetList.i = CurrentGadgetList()
+            _PBSL_InstanceWindow = OpenWindow(#PB_Any, 0, 0, 100, 100, "", #PB_Window_BorderLess | #PB_Window_NoGadgets | #PB_Window_NoActivate | #PB_Window_Invisible)
+            If (_PBSL_InstanceWindow)
+              SetWindowCallback(@_PBSL_InstanceWindowCallback(), _PBSL_InstanceWindow)
+            EndIf
+            If (PrevGadgetList)
+              UseGadgetList(PrevGadgetList)
+            EndIf
           EndIf
-        EndIf
+        CompilerEndIf
       EndIf
       
     CompilerElseIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_LinuxPIDFile)
@@ -180,6 +232,16 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
       EndIf
       
     CompilerEndIf
+    
+    CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_MonitorMapFile)
+      CompilerIf (Not #IsThreadsafe)
+        CompilerWarning "ThreadSafe mode is recommended for " + #PB_Compiler_Filename
+      CompilerEndIf
+      If (Not _PBSL_IsAlreadyRunning)
+        _PBSL_MapMonitorThread = CreateThread(@_PBSL_InstanceMapMonitorThread(), #Null)
+      EndIf
+    CompilerEndIf
+    
   EndProcedure
   
   Procedure SendMapToMainInstance(Map StringMap.s())
@@ -242,6 +304,9 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
   EndProcedure
   
   Procedure QuitInstance()
+    CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_MonitorMapFile)
+      _PBSL_MapMonitorThread = #Null
+    CompilerEndIf
     CompilerIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_WindowsMutex)
       If (_PBSL_Mutex)
         ; "The system closes the handle automatically when the process terminates. The mutex object is destroyed when its last handle has been closed."
@@ -249,7 +314,9 @@ CompilerIf (Not Defined(_PBSL_SingleInstance_Included, #PB_Constant))
         _PBSL_Mutex = #Null
       EndIf
     CompilerElseIf (#_PBSL_InstanceMethod & #_PBSL_InstanceMethod_LinuxPIDFile)
-      DeleteFile(_PBSL_InstancePIDFile)
+      If (Not _PBSL_IsAlreadyRunning)
+        DeleteFile(_PBSL_InstancePIDFile)
+      EndIf
     CompilerEndIf
   EndProcedure
   
