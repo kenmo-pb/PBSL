@@ -107,6 +107,16 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
       Until ((WaitWindowEvent() = #PB_Event_CloseWindow) And (((_Window) = #PB_Any) Or (EventWindow() = (_Window))))
     EndMacro
     
+    Macro AddShortcut(_Window, _Key, _MenuItem = 0)
+      AddKeyboardShortcut((_Window), (_Key), (_MenuItem))
+    EndMacro
+    Macro AddEscapeShortcut(_Window, _MenuItem = 0)
+      AddKeyboardShortcut((_Window), #PB_Shortcut_Escape, (_MenuItem))
+    EndMacro
+    Macro AddReturnShortcut(_Window, _MenuItem = 0)
+      AddKeyboardShortcut((_Window), #PB_Shortcut_Return, (_MenuItem))
+    EndMacro
+    
     Macro AddAndBindShortcut(_Window, _Key, _MenuItem, _Callback)
       AddKeyboardShortcut((_Window), (_Key), (_MenuItem))
       BindEvent(#PB_Event_Menu, (_Callback), (_Window), (_MenuItem))
@@ -155,6 +165,39 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
           UseGadgetList(WindowID(DummyWindow))
         EndIf
       EndIf
+    EndProcedure
+    
+    Procedure.i MakeShortcut(Key.i, Command.i = #False, Shift.i = #False, Alt.i = #False, Control.i = #False)
+      Protected Result.i = Key
+      Select (Key)
+        CompilerIf (#PB_Shortcut_A <> 'a')
+          Case 'a' To 'z'
+            Key = #PB_Shortcut_A + (Key - 'a')
+        CompilerEndIf
+        CompilerIf (#PB_Shortcut_A <> 'A')
+          Case 'A' To 'Z'
+            Key = #PB_Shortcut_A + (Key - 'A')
+        CompilerEndIf
+        CompilerIf (#PB_Shortcut_0 <> '0')
+          Case '0' To '9'
+            Key = #PB_Shortcut_0 + (Key - '0')
+        CompilerEndIf
+      EndSelect
+      If (Key Or (#True))
+        If (Command)
+          Result | #PB_Shortcut_Command
+        EndIf
+        If (Shift)
+          Result | #PB_Shortcut_Shift
+        EndIf
+        If (Alt)
+          Result | #PB_Shortcut_Alt
+        EndIf
+        If (Control)
+          Result | #PB_Shortcut_Control
+        EndIf
+      EndIf
+      ProcedureReturn (Result)
     EndProcedure
     
     CompilerIf (#PB_Compiler_OS = #PB_OS_Windows)

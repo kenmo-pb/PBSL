@@ -98,6 +98,7 @@ CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
         Else
           Title + " (" + Str(ImageWidth(Image)) + "x" + Str(ImageHeight(Image)) + ")"
         EndIf
+        Protected PrevGadgetList.i = CurrentGadgetList()
         Protected Win.i = OpenWindow(#PB_Any, 0, 0, IW, IH, Title, WinFlags)
         If (Win)
           Protected Gad.i = ImageGadget(#PB_Any, 0, 0, IW, IH, ImageID(Image))
@@ -118,6 +119,9 @@ CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
             FreeGadget(Gad)
           EndIf
           CloseWindow(Win)
+          If (PrevGadgetList)
+            UseGadgetList(PrevGadgetList)
+          EndIf
         EndIf
         If (TempImg)
           FreeImage(TempImg)

@@ -30,6 +30,10 @@ CompilerIf (Not Defined(_PBSL_Gadgets_Included, #PB_Constant))
     ResizeGadget((_Gadget), #PB_Ignore, #PB_Ignore, (_Width), (_Height))
   EndMacro
   
+  Macro ResizeGadgetToWindow(_Gadget, _Window)
+    ResizeGadget((_Gadget), 0, 0, WindowWidth(_Window), WindowHeight(_Window))
+  EndMacro
+  
   Macro GadgetExtentX(_Gadget)
     (GadgetX(_Gadget) + GadgetWidth(_Gadget))
   EndMacro
