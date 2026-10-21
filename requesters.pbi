@@ -18,6 +18,17 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
   #Confirm_YesNo       = #PB_MessageRequester_YesNo
   #Confirm_YesNoCancel = #PB_MessageRequester_YesNoCancel
   
+  #ColorRequesterEx_StoreColor = $01
+  #ColorRequesterEx_Compact    = $02 ; only has effect on Windows
+  
+  CompilerIf (#IsWindowsBuild)
+    #ColorRequesterExColorCount = 16
+  CompilerElse
+    #ColorRequesterExColorCount = 1
+  CompilerEndIf
+  #ColorRequesterExColorNewest = 0
+  #ColorRequesterExColorOldest = (#ColorRequesterExColorCount - 1)
+  
   ;-
   ;- - Requester Structures
   
@@ -34,6 +45,8 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
     
     Global _RequesterExFileList.s = ""
     Global _RequesterExLastIndex.i = 0
+    
+    Global Dim ColorRequesterExColor.l(#ColorRequesterExColorCount - 1)
     
     ;-
     ;- - Requester Macros
@@ -92,6 +105,72 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
       CompilerElse
         Result = MessageRequester("Confirm", Message, (Flags | #PB_MessageRequester_Question))
       CompilerEndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure ColorRequesterExStoreColor(Color.i)
+      CompilerIf (#ColorRequesterExColorCount > 1)
+        Protected Found.i = -1
+        Protected i.i
+        For i = 0 To (#ColorRequesterExColorCount - 1)
+          If (ColorRequesterExColor(i) = Color)
+            Found = i
+            Break
+          EndIf
+        Next i
+        If (Found = -1)
+          Found = #ColorRequesterExColorCount - 1
+        EndIf
+        If (Found > 0)
+          For i = Found To (#ColorRequesterExColorNewest + 1) Step -1
+            ColorRequesterExColor(i) = ColorRequesterExColor(i - 1)
+          Next i
+        EndIf
+      CompilerEndIf
+      ColorRequesterExColor(#ColorRequesterExColorNewest) = Color
+    EndProcedure
+    
+    Procedure.i ColorRequesterEx(Color.i = #PB_Default, ParentID.i = #Null, Flags.i = #PB_Default)
+      Protected Result.i
+      Flags = MapPBDefault(Flags, #Null)
+      CompilerIf (#IsWindowsBuild And (#True))
+        If (Color = #PB_Default)
+          Color = ColorRequesterExColor(#ColorRequesterExColorNewest)
+        EndIf
+        ; https://learn.microsoft.com/en-us/windows/win32/api/commdlg/ns-commdlg-choosecolora-r1
+        Protected cc.CHOOSECOLOR
+        cc\lStructSize  = SizeOf(cc)
+        cc\hwndOwner    = ParentID
+        cc\rgbResult    = Color ; PB natively uses Win32-format color values
+        cc\lpCustColors = @ColorRequesterExColor(0);#Null ; seems to be required!
+        cc\Flags        = #CC_RGBINIT
+        If (Not (Flags & #ColorRequesterEx_Compact))
+          cc\Flags | #CC_FULLOPEN
+        EndIf
+        ; https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms646912(v=vs.85)
+        If (ChooseColor_(@cc))
+          Result = cc\rgbResult
+        Else
+          Result = -1
+        EndIf
+        
+      CompilerElse
+        If (Color = #PB_Default)
+          ;Color = #Black ; to match ColorRequester() default behavior
+          Color = ColorRequesterExColor(#ColorRequesterExColorNewest)
+        EndIf
+        CompilerIf (#RequestersSupportParentID)
+          Result = ColorRequester(Color, ParentID)
+        CompilerElse
+          Result = ColorRequester(Color)
+        CompilerEndIf
+      CompilerEndIf
+      
+      If (Result >= 0)
+        If (Flags & #ColorRequesterEx_StoreColor)
+          ColorRequesterExStoreColor(Result)
+        EndIf
+      EndIf
       ProcedureReturn (Result)
     EndProcedure
     
