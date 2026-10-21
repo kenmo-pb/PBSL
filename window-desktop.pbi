@@ -36,6 +36,19 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     #PB_Shortcut_Minus = #PB_Shortcut_Hyphen
   CompilerEndIf
   
+  #PB_DragDrop_Text    = #PB_Drop_Text
+  #PB_DragDrop_Image   = #PB_Drop_Image
+  #PB_DragDrop_Files   = #PB_Drop_Files
+  #PB_DragDrop_Private = #PB_Drop_Private
+  
+  #PB_DragDrop_Copy = #PB_Drag_Copy
+  #PB_DragDrop_Move = #PB_Drag_Move
+  #PB_DragDrop_Link = #PB_Drag_Link
+  #PB_DragDrop_None = #PB_Drag_None
+  
+  #PB_DragDrop_AllFormats = #PB_Drop_Files | #PB_Drop_Image | #PB_Drop_Text ;| #PB_Drop_Private
+  #PB_DragDrop_AllActions = #PB_Drag_Copy  | #PB_Drag_Move  | #PB_Drag_Link
+  
   ;-
   ;- - Event Constants
   
@@ -124,6 +137,14 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
     
     Macro CurrentGadgetList()
       UseGadgetList(0) ; "If 'WindowID' is 0, the current GadgetList window will be returned and nothing will be changed."
+    EndMacro
+    
+    Macro EnableFileDropOnWindow(_Window, _Action = #PB_DragDrop_AllActions)
+      EnableWindowDrop((_Window), #PB_DragDrop_Files, (_Action))
+    EndMacro
+    
+    Macro EnableFileDropOnGadget(_Gadget, _Action = #PB_DragDrop_AllActions)
+      EnableGadgetDrop((_Gadget), #PB_DragDrop_Files, (_Action))
     EndMacro
     
     ;-
