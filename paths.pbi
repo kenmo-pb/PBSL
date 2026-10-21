@@ -460,28 +460,59 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
-  Procedure.s UniqueFileName(Prefix.s = "", Suffix.s = "", Directory.s = "")
+  Procedure.s _UniqueFileNameFormat(Number.i, Format.s)
+    Protected Result.s = Format
+    Protected Pattern.s = ""
+    Protected Padding.i = 0
+    If (FindString(Format, "%d"))
+      Pattern = "%d"
+      Padding = 0
+    Else
+      Pattern = Between(Format, "%", "d")
+      If (Pattern)
+        Padding = Val(Pattern)
+        Pattern = "%" + Pattern + "d"
+      EndIf
+    EndIf
+    If (Pattern)
+      If (Padding = 0)
+        Padding = Len(Str(Number))
+      EndIf
+      Result = ReplaceString(Result, Pattern, RSet(Str(Number), Padding, "0"))
+    Else
+      Result + Str(Number)
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s UniqueFileName(Name.s = "", Extension.s = "", Directory.s = "", Format.s = "(%d)")
     Protected Result.s = ""
     If (Directory)
       Directory = EnsurePathSeparator(Directory)
     EndIf
-    Suffix = RemovePathSeparator(Suffix)
     
-    Protected Attempt.i = 1
+    Protected Attempt.i = 0
     While (#True)
-      Protected Try.s = Directory + Prefix
-      If ((Attempt < 10) And (#True))
-        Try + "0"
+      Protected Try.s = Directory + Name
+      If (Attempt > 0)
+        Try + _UniqueFileNameFormat(Attempt, Format)
       EndIf
-      Try + Str(Attempt)
-      Try + Suffix
-      If (FileSize(Try) = -1)
+      Try + Extension
+      If (FileSize(Try) = #PB_FileSize_Missing)
         Result = Try
         Break
       EndIf
       Attempt + 1
     Wend
     ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.s EnsureUniqueFileName(File.s, Format.s = "(%d)")
+    Protected Ext.s = GetExtensionPart(File)
+    If (Ext)
+      Ext = "." + Ext
+    EndIf
+    ProcedureReturn (UniqueFileName(GetNamePart(File), Ext, GetPathPart(File), Format))
   EndProcedure
   
   Procedure.s UniqueDirectory(Prefix.s = "", Suffix.s = "", ParentDirectory.s = "", Create.i = #False)
