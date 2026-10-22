@@ -43,49 +43,36 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
     ;-
     ;- - Requester Globals
     
-    Global _RequesterExFileList.s = ""
-    Global _RequesterExLastIndex.i = 0
+    Global PBSL_Requester_InfoTitle.s     = "Info"
+    Global PBSL_Requester_WarningTitle.s  = "Warning"
+    Global PBSL_Requester_ErrorTitle.s    = "Error"
+    Global PBSL_Requester_QuestionTitle.s = "Question"
+    Global PBSL_Requester_ConfirmTitle.s  = "Confirm"
     
     Global Dim ColorRequesterExColor.l(#ColorRequesterExColorCount - 1)
+    
+    Global _RequesterExFileList.s = ""
+    Global _RequesterExLastIndex.i = 0
     
     ;-
     ;- - Requester Macros
     
-    CompilerIf (#RequestersSupportParentID)
-      Macro Info(_Message, _ParentID = #Null)
-        MessageRequester("Info", _Message, #PB_MessageRequester_Info | #PB_MessageRequester_Ok, (_ParentID))
-      EndMacro
-      Macro Warning(_Message, _ParentID = #Null)
-        MessageRequester("Warning", _Message, #PB_MessageRequester_Warning | #PB_MessageRequester_Ok, (_ParentID))
-      EndMacro
-      Macro Error(_Message, _ParentID = #Null)
-        MessageRequester("Error", _Message, #PB_MessageRequester_Error | #PB_MessageRequester_Ok, (_ParentID))
-      EndMacro
-      Macro Question(_Message, _Flags = #PB_MessageRequester_YesNo, _ParentID = #Null)
-        MessageRequester("Question", _Message, #PB_MessageRequester_Question | (_Flags), (_ParentID))
-      EndMacro
-      
-      Macro PasswordRequester(_Title, _Message, _DefaultString, _Flags = #Null, _ParentID = #Null)
-        InputRequester(_Title, _Message, _DefaultString, ((_Flags) | #PB_InputRequester_Password), (_ParentID))
-      EndMacro
-    CompilerElse
-      Macro Info(_Message, _ParentID = #Null)
-        MessageRequester("Info", _Message, #PB_MessageRequester_Info | #PB_MessageRequester_Ok)
-      EndMacro
-      Macro Warning(_Message, _ParentID = #Null)
-        MessageRequester("Warning", _Message, #PB_MessageRequester_Warning | #PB_MessageRequester_Ok)
-      EndMacro
-      Macro Error(_Message, _ParentID = #Null)
-        MessageRequester("Error", _Message, #PB_MessageRequester_Error | #PB_MessageRequester_Ok)
-      EndMacro
-      Macro Question(_Message, _Flags = #PB_MessageRequester_YesNo, _ParentID = #Null)
-        MessageRequester("Question", _Message, #PB_MessageRequester_Question | (_Flags))
-      EndMacro
-      
-      Macro PasswordRequester(_Title, _Message, _DefaultString, _Flags = #Null, _ParentID = #Null)
-        InputRequester(_Title, _Message, _DefaultString, ((_Flags) | #PB_InputRequester_Password))
-      EndMacro
-    CompilerEndIf
+    Macro Info(_Message, _ParentID = #Null)
+      MessageRequester(PBSL_Requester_InfoTitle, _Message, #PB_MessageRequester_Info | #PB_MessageRequester_Ok, (_ParentID))
+    EndMacro
+    Macro Warning(_Message, _ParentID = #Null)
+      MessageRequester(PBSL_Requester_WarningTitle, _Message, #PB_MessageRequester_Warning | #PB_MessageRequester_Ok, (_ParentID))
+    EndMacro
+    Macro Error(_Message, _ParentID = #Null)
+      MessageRequester(PBSL_Requester_ErrorTitle, _Message, #PB_MessageRequester_Error | #PB_MessageRequester_Ok, (_ParentID))
+    EndMacro
+    Macro Question(_Message, _Flags = #PB_MessageRequester_YesNo, _ParentID = #Null)
+      MessageRequester(PBSL_Requester_QuestionTitle, _Message, #PB_MessageRequester_Question | (_Flags), (_ParentID))
+    EndMacro
+    
+    Macro PasswordRequester(_Title, _Message, _DefaultString, _Flags = #Null, _ParentID = #Null)
+      InputRequester(_Title, _Message, _DefaultString, ((_Flags) | #PB_InputRequester_Password), (_ParentID))
+    EndMacro
     
     Macro ConfirmYes(_Message, _AllowCancel = #False, _ParentID = #Null)
       (Bool(Confirm(_Message, _AllowCancel, _ParentID) = #Confirm_Yes))
@@ -100,11 +87,7 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
       If (AllowCancel)
         Flags = #PB_MessageRequester_YesNoCancel
       EndIf
-      CompilerIf (#RequestersSupportParentID)
-        Result = MessageRequester("Confirm", Message, (Flags | #PB_MessageRequester_Question), ParentID)
-      CompilerElse
-        Result = MessageRequester("Confirm", Message, (Flags | #PB_MessageRequester_Question))
-      CompilerEndIf
+      Result = MessageRequester(PBSL_Requester_ConfirmTitle, Message, (Flags | #PB_MessageRequester_Question), ParentID)
       ProcedureReturn (Result)
     EndProcedure
     
@@ -159,11 +142,7 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
           ;Color = #Black ; to match ColorRequester() default behavior
           Color = ColorRequesterExColor(#ColorRequesterExColorNewest)
         EndIf
-        CompilerIf (#RequestersSupportParentID)
-          Result = ColorRequester(Color, ParentID)
-        CompilerElse
-          Result = ColorRequester(Color)
-        CompilerEndIf
+        Result = ColorRequester(Color, ParentID)
       CompilerEndIf
       
       If (Result >= 0)
@@ -313,11 +292,7 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
       Pattern = MapEmptyString(Pattern, "All Files|*.*")
       Pattern = _RequesterExFormatPatterns(Pattern, DefaultFileName, @PatternPosition)
       
-      CompilerIf (#RequestersSupportParentID)
-        Result = SaveFileRequester(Title, DefaultFile, Pattern, PatternPosition, ParentID)
-      CompilerElse
-        Result = SaveFileRequester(Title, DefaultFile, Pattern, PatternPosition)
-      CompilerEndIf
+      Result = SaveFileRequester(Title, DefaultFile, Pattern, PatternPosition, ParentID)
       If (Result)
         If (GetExtensionPart(Result) = "")
           CompilerIf (#True)
@@ -361,11 +336,7 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
       Pattern = _RequesterExFormatPatterns(Pattern, DefaultFileName, @PatternPosition)
       Protected Flags.i = Bool(MultiSelect) * #PB_Requester_MultiSelection
       
-      CompilerIf (#RequestersSupportParentID)
-        Protected FirstSelected.s = OpenFileRequester(Title, DefaultFile, Pattern, PatternPosition, Flags, ParentID)
-      CompilerElse
-        Protected FirstSelected.s = OpenFileRequester(Title, DefaultFile, Pattern, PatternPosition, Flags)
-      CompilerEndIf
+      Protected FirstSelected.s = OpenFileRequester(Title, DefaultFile, Pattern, PatternPosition, Flags, ParentID)
       _RequesterExFileList = FirstSelected
       _RequesterExLastIndex = 0
       If (FirstSelected)
@@ -385,7 +356,7 @@ CompilerIf (Not Defined(_PBSL_Requesters_Included, #PB_Constant))
       ProcedureReturn (Result)
     EndProcedure
     
-    CompilerIf (#True) ; Patch native commands?
+    CompilerIf (#False);(Not Defined(OpenFileRequester, #PB_Procedure)) ; Patch native commands?
       
       Macro NextSelectedFileName()
         NextSelectedFileNameEx()

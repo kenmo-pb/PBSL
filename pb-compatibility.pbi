@@ -73,5 +73,55 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
     EndMacro
   CompilerEndIf
   
+  CompilerIf (Not #RequestersSupportParentID)
+    CompilerIf (#True) ; automatically "patch" Requester calls which don't support ParentID
+      
+      Procedure.i _ColorRequester(Color.i)
+        ProcedureReturn (ColorRequester(Color))
+      EndProcedure
+      Procedure.i _FontRequester(FontName.s, FontSize.i, Flags.i, Color.i, Style.i)
+        ProcedureReturn (FontRequester(FontName, FontSize, Flags, Color, Style))
+      EndProcedure
+      Procedure.s _InputRequester(Title.s, Message.s, DefaultString.s, Flags.i)
+        ProcedureReturn (InputRequester(Title, Message, DefaultString, Flags))
+      EndProcedure
+      Procedure.i _MessageRequester(Title.s, Text.s, Flags.i)
+        ProcedureReturn (MessageRequester(Title, Text, Flags))
+      EndProcedure
+      Procedure.s _OpenFileRequester(Title.s, DefaultFile.s, Pattern.s, PatternPosition.i, Flags.i)
+        ProcedureReturn (OpenFileRequester(Title, DefaultFile, Pattern, PatternPosition, Flags))
+      EndProcedure
+      Procedure.s _PathRequester(Title.s, InitialPath.s)
+        ProcedureReturn (PathRequester(Title, InitialPath))
+      EndProcedure
+      Procedure.s _SaveFileRequester(Title.s, DefaultFile.s, Pattern.s, PatternPosition.i)
+        ProcedureReturn (SaveFileRequester(Title, DefaultFile, Pattern, PatternPosition))
+      EndProcedure
+      
+      Macro ColorRequester(_Color = #Black, _ParentID = #Null)
+        _ColorRequester(_Color)
+      EndMacro
+      Macro FontRequester(_FontName, _FontSize, _Flags, _Color = #Black, _Style = #Null, _ParentID = #Null)
+        _FontRequester(_FontName, (_FontSize), (_Flags), (_Color), (_Style))
+      EndMacro
+      Macro InputRequester(_Title, _Message, _DefaultString, _Flags = #Null, _ParentID = #Null)
+        _InputRequester(_Title, _Message, _DefaultString, (_Flags))
+      EndMacro
+      Macro MessageRequester(_Title, _Text, _Flags = #Null, _ParentID = #Null)
+        _MessageRequester(_Title, _Text, (_Flags))
+      EndMacro
+      Macro OpenFileRequester(_Title, _DefaultFile, _Pattern, _PatternPosition, _Flags = #Null, _ParentID = #Null)
+        _OpenFileRequester(_Title, _DefaultFile, _Pattern, (_PatternPosition), (_Flags))
+      EndMacro
+      Macro PathRequester(_Title, _InitialPath, _ParentID = #Null)
+        _PathRequester(_Title, _InitialPath)
+      EndMacro
+      Macro SaveFileRequester(_Title, _DefaultFile, _Pattern, _PatternPosition, _ParentID = #Null)
+        _SaveFileRequester(_Title, _DefaultFile, _Pattern, (_PatternPosition))
+      EndMacro
+      
+    CompilerEndIf
+  CompilerEndIf
+  
 CompilerEndIf
 ;-
