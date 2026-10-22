@@ -37,6 +37,18 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
     #PB_2DDrawing_FastText = #Null
   CompilerEndIf
   
+  #PB_Font_Normal = 0
+  CompilerIf (Not Defined(PB_Font_Underline, #PB_Constant))
+    #PB_Font_Underline = 0
+  CompilerEndIf
+  CompilerIf (Not Defined(PB_Font_StrikeOut, #PB_Constant))
+    #PB_Font_StrikeOut = 0
+  CompilerEndIf
+  CompilerIf (Not Defined(PB_Font_HighQuality, #PB_Constant))
+    #PB_Font_HighQuality = 0
+  CompilerEndIf
+  #PB_Font_AllowedStyleMask = #PB_Font_Bold | #PB_Font_Italic | #PB_Font_Underline | #PB_Font_StrikeOut | #PB_Font_HighQuality
+  
   CompilerIf (Not Defined(PB_FontRequester_Effects, #PB_Constant))
     #PB_FontRequester_Effects = 0
   CompilerEndIf
