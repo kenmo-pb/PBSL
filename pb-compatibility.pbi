@@ -11,11 +11,13 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   
   ;- - Compatibility Constants
   
+  #WEBPSupport = PBGTE(650)
+  
   #TLSSupport = PBGTE(620)
   
-  #RequestersSupportParentID = PBGTE(610)
+  #SFTPSupport = PBGTE(612)
   
-  #WEBPSupport = PBGTE(650)
+  #RequestersSupportParentID = PBGTE(610)
   
   CompilerIf (Not Defined(PB_Compiler_Backend, #PB_Constant))
     #PB_Backend_Asm      = 0

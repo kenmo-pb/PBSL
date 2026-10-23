@@ -43,6 +43,15 @@ CompilerIf (Not Defined(_PBSL_Paths_Included, #PB_Constant))
     ProcedureReturn (Path)
   EndProcedure
   
+  Procedure.s EnsureForwardSlash(Directory.s)
+    If (Directory)
+      If (Not EndsWith(Directory, "/"))
+        Directory + "/"
+      EndIf
+    EndIf
+    ProcedureReturn (Directory)
+  EndProcedure
+  
   Procedure.s EnsurePathSeparator(Path.s)
     If (Path)
       CompilerIf (#IsWindowsBuild Or (#False))
