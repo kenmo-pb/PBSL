@@ -40,6 +40,10 @@ CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
     SaveImage((_Image), _File, #PB_ImagePlugin_JPEG, MapPBDefault((_Quality), #JPEGQualityDefault))
   EndMacro
   
+  Macro CopyImageAny(_Image)
+    CopyImage((_Image), #PB_Any)
+  EndMacro
+  
   CompilerIf (Not #PBSL_NoGraphics)
     
     ;-
@@ -82,7 +86,7 @@ CompilerIf (Not Defined(_PBSL_Images_Included, #PB_Constant))
           Protected HMax.i = PrimaryDesktopHeight() * 0.60
           Protected Scale.d = FitRect(IW, IH, WMax, HMax, #False)
           If ((Scale > 0.0) And (Scale < 1.0))
-            TempImg = CopyImage(Image, #PB_Any)
+            TempImg = CopyImageAny(Image)
             If (TempImg)
               IW = IW * Scale
               IH = IH * Scale

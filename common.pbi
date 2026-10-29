@@ -106,6 +106,8 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     #PB_Compiler_32Bit = #False
     #PB_Compiler_64Bit = #True
     
+    #PB_IntegerType = #PB_Quad
+    
     #IntSize = 8
   CompilerElse
     #Is32BitBuild = #True
@@ -113,6 +115,8 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     
     #PB_Compiler_32Bit = #True
     #PB_Compiler_64Bit = #False
+    
+    #PB_IntegerType = #PB_Long
     
     #IntSize = 4
   CompilerEndIf
@@ -524,6 +528,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "ftp.pbi"
     IncludeFile "json.pbi"
     IncludeFile "packer.pbi"
+    IncludeFile "undo.pbi"
     IncludeFile "scintilla.pbi"
     IncludeFile "ffmpeg.pbi"
     IncludeFile "single-instance.pbi"

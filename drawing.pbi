@@ -38,6 +38,13 @@ CompilerIf (Not Defined(_PBSL_Drawing_Included, #PB_Constant))
       Box(0, 0, OutputWidth(), OutputHeight(), Color)
     EndProcedure
     
+    Procedure ClearCanvas(Canvas.i, Color.i)
+      If (StartCanvasDrawing(Canvas))
+        ClearOutput(Color)
+        StopDrawing()
+      EndIf
+    EndProcedure
+    
   CompilerEndIf
   
 CompilerEndIf
