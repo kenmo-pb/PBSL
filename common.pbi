@@ -531,6 +531,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "undo.pbi"
     IncludeFile "scintilla.pbi"
     IncludeFile "ffmpeg.pbi"
+    IncludeFile "update-check.pbi"
     IncludeFile "single-instance.pbi"
   CompilerEndIf
   
