@@ -187,5 +187,23 @@ CompilerIf (Not Defined(_PBSL_DateTime_Included, #PB_Constant))
     ProcedureReturn (FirstDayOfWeekOfMonth(#January, Year))
   EndProcedure
   
+  Procedure.q ParseDateCommon(DateString.s)
+    Protected Result.q = 0
+    DateString = RemoveSpaces(DateString)
+    Protected *CA.CharacterArray = @DateString
+    ; TODO Implement more date formats
+    Select (Len(DateString))
+      Case 8
+        If (#True)
+          Result = ParseDate("%yyyy%mm%dd", DateString)
+        EndIf
+      Case 10
+        If ((*CA\c[4] = '-') And (*CA\c[7] = '-'))
+          Result = ParseDate("%yyyy-%mm-%dd", DateString)
+        EndIf
+    EndSelect
+    ProcedureReturn (Result)
+  EndProcedure
+  
 CompilerEndIf
 ;-

@@ -11,6 +11,9 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
   
   ;- - Packer Constants
   
+  #PackerPlugin_Default = #PB_Default
+  #PackerPlugin_Invalid = #Null
+  
   #PackerLevel_Minimum = 0
   #PackerLevel_Maximum = 9
   #PackerLevel_Default = #PackerLevel_Maximum
@@ -18,7 +21,7 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
   ;-
   ;- - Packer Procedures
   
-  Procedure.i PackerPluginIDByExtension(FileOrExtension.s, DefaultResult.i = 0)
+  Procedure.i PackerPluginIDByExtension(FileOrExtension.s, DefaultResult.i = #PackerPlugin_Invalid)
     Protected Result.i = DefaultResult
     If (GetExtensionPart(FileOrExtension))
       FileOrExtension = GetExtensionPart(FileOrExtension)
@@ -70,15 +73,15 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
-  Procedure.i CreatePackFromFolder(PackFile.s, Folder.s, PluginID.i = #PB_Default, Level.i = #PackerLevel_Default)
+  Procedure.i CreatePackFromFolder(PackFile.s, Folder.s, PluginID.i = #PackerPlugin_Default, Level.i = #PackerLevel_Default)
     Protected Result.i = #False
     If (PackFile And Folder)
       Folder = EnsurePathSeparator(Folder)
       If (FileSize(Folder) = -2)
-        If (PluginID = #PB_Default)
+        If (PluginID = #PackerPlugin_Default)
           PluginID = PackerPluginIDByExtension(PackFile, #PB_PackerPlugin_Zip)
         EndIf
-        If (PluginID > 0)
+        If (PluginID <> #PackerPlugin_Invalid)
           Level = MapPBDefault(Level, #PackerLevel_Default)
           Protected Pack.i = CreatePack(#PB_Any, PackFile, PluginID, Level)
           If (Pack)
@@ -92,14 +95,14 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
-  Procedure.i CreatePackFromFile(PackFile.s, File.s, PluginID.i = #PB_Default, Level.i = #PackerLevel_Default)
+  Procedure.i CreatePackFromFile(PackFile.s, File.s, PluginID.i = #PackerPlugin_Default, Level.i = #PackerLevel_Default)
     Protected Result.i = #False
     If (PackFile And File)
       If (FileSize(File) >= 0)
-        If (PluginID = #PB_Default)
-          PluginID = PackerPluginIDByExtension(PackFile, 0)
+        If (PluginID = #PackerPlugin_Default)
+          PluginID = PackerPluginIDByExtension(PackFile, #PB_PackerPlugin_Zip)
         EndIf
-        If (PluginID > 0)
+        If (PluginID <> #PackerPlugin_Invalid)
           Level = MapPBDefault(Level, #PackerLevel_Default)
           Protected Pack.i = CreatePack(#PB_Any, PackFile, PluginID, Level)
           If (Pack)
@@ -117,7 +120,7 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
-  Procedure.i CreatePackFromApp(PackFile.s, AppPath.s, PluginID.i = #PB_Default, Level.i = #PackerLevel_Default)
+  Procedure.i CreatePackFromApp(PackFile.s, AppPath.s, PluginID.i = #PackerPlugin_Default, Level.i = #PackerLevel_Default)
     Protected Result.i = #False
     If (PackFile And AppPath)
       Select (FileSize(AppPath))

@@ -114,7 +114,7 @@ CompilerIf (Not Defined(_PBSL_Math_Included, #PB_Constant))
     _IIfS(Bool(_Expression), (_StringIfTrue), (_StringIfFalse))
   EndMacro
   
-  Procedure.d FitRect(SourceWidth.i, SourceHeight.i, DestWidth.i, DestHeight.i, Fill.i = #False, *NewWidth.INTEGER = #Null, *NewHeight.INTEGER = #Null)
+  Procedure.d FitRect(SourceWidth.i, SourceHeight.i, DestWidth.i, DestHeight.i, Fill.i = #False, *NewWidth.INTEGER = #Null, *NewHeight.INTEGER = #Null, *CenteredX.INTEGER = #Null, *CenteredY.INTEGER = #Null)
     Protected Scale.d = 0.0
     If ((SourceWidth > 0) And (SourceHeight > 0))
       If ((DestWidth > 0) And (DestHeight > 0))
@@ -131,6 +131,12 @@ CompilerIf (Not Defined(_PBSL_Math_Included, #PB_Constant))
       EndIf
       If (*NewHeight)
         *NewHeight\i = SourceHeight * Scale
+      EndIf
+      If (*CenteredX)
+        *CenteredX\i = (DestWidth - (SourceWidth * Scale)) / 2
+      EndIf
+      If (*CenteredY)
+        *CenteredY\i = (DestHeight - (SourceHeight * Scale)) / 2
       EndIf
     EndIf
     ProcedureReturn (Scale)

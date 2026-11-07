@@ -14,7 +14,7 @@ CompilerIf (Not Defined(_PBSL_Gadgets_Included, #PB_Constant))
   #PB_GadgetType_Minimum = 1
   CompilerIf (PBGTE(610))
     #PB_GadgetType_Maximum = 35 ; WebView added
-  CompilerElseIf (PBGTE(530))
+  CompilerElseIf (#PB_Compiler_Version >= 530);(PBGTE(530))
     #PB_GadgetType_Maximum = 34 ; OpenGL added
   CompilerElse
     #PB_GadgetType_Maximum = 33 ; Canvas last added
