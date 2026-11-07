@@ -135,5 +135,294 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.i OpenPackMultiPlugin(Pack.i, File.s, PluginID.i = #PackerPlugin_Default)
+    Protected Result.i = #Null
+    If (PluginID = #PackerPlugin_Default)
+      CompilerIf (Defined(PB_PackerPlugin_Zip, #PB_Constant))
+        If (Not Result)
+          Result = OpenPack(Pack, File, #PB_PackerPlugin_Zip)
+        EndIf
+      CompilerEndIf
+      CompilerIf (Defined(PB_PackerPlugin_Tar, #PB_Constant))
+        If (Not Result)
+          Result = OpenPack(Pack, File, #PB_PackerPlugin_Tar)
+        EndIf
+      CompilerEndIf
+      CompilerIf (Defined(PB_PackerPlugin_BriefLZ, #PB_Constant))
+        If (Not Result)
+          Result = OpenPack(Pack, File, #PB_PackerPlugin_BriefLZ)
+        EndIf
+      CompilerEndIf
+      CompilerIf (Defined(PB_PackerPlugin_Lzma, #PB_Constant))
+        If (Not Result)
+          Result = OpenPack(Pack, File, #PB_PackerPlugin_Lzma)
+        EndIf
+      CompilerEndIf
+    Else
+      Result = OpenPack(Pack, File, PluginID)
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  CompilerIf (#True)
+    
+    ;-
+    ;- - Archive Structures
+    
+    Structure ArchiveEntry
+      Name.s
+      Size.q
+      Modified.i
+    EndStructure
+    
+    Structure Archive
+      Pack.i
+      File.s
+      Examined.i
+      
+      NumFiles.i
+      NumFolders.i
+      TopLevelFiles.i
+      TopLevelFolders.i
+      TopLevelItems.i
+      TopLevelFileName.s
+      TopLevelFolderName.s
+      
+      FilesExtracted.i
+      FilesSkipped.i
+      FileErrors.i
+      FoldersExtracted.i
+      FoldersSkipped.i
+      FolderErrors.i
+      ItemsExtracted.i
+      ItemsSkipped.i
+      ItemErrors.i
+      
+      List Entry.ArchiveEntry()
+    EndStructure
+    
+    ;-
+    ;- - Archive Procedures
+    
+    Declare.i ExamineArchive(*Archive.Archive)
+    
+    Procedure.i _EnsureArchiveExamined(*Archive.Archive)
+      Protected Result.i = #False
+      If (*Archive\Examined)
+        Result = #True
+      Else
+        Result = ExamineArchive(*Archive)
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure.i ExtractArchive(*Archive.Archive, Destination.s)
+      Protected Result.i = #False
+      If (*Archive And Destination)
+        Destination = EnsurePathSeparator(Destination)
+        
+        _EnsureArchiveExamined(*Archive)
+        
+        ; TODO - Make these all optional
+        Protected Overwrite.i = #True
+        Protected DeduplicateTopFolder.i = #True
+        Protected PreserveModifiedDate.i = #True
+        
+        If (CreateDirectoryRecursive(Destination))
+          
+          Protected SkipChars.i = 0
+          If (DeduplicateTopFolder)
+            If ((*Archive\TopLevelFolders = 1) And (*Archive\TopLevelFiles = 0))
+              If (GetTopDirectoryName(Destination) + "/" = *Archive\TopLevelFolderName)
+                SkipChars = Len(*Archive\TopLevelFolderName)
+              EndIf
+            EndIf
+          EndIf
+          
+          *Archive\FilesExtracted   = 0
+          *Archive\FilesSkipped     = 0
+          *Archive\FileErrors       = 0
+          *Archive\FoldersExtracted = 0
+          *Archive\FoldersSkipped   = 0
+          *Archive\FolderErrors     = 0
+          
+          Protected DestPath.s
+          Protected DestSize.q
+          
+          ForEach *Archive\Entry()
+            If (*Archive\Entry()\Size = #PB_FileSize_Directory)
+              DestPath = *Archive\Entry()\Name
+              If (SkipChars)
+                DestPath = Mid(DestPath, 1 + SkipChars)
+              EndIf
+              DestPath = Destination + DestPath
+              DestSize = FileSize(DestPath)
+              If (DestSize = #PB_FileSize_Directory)
+                *Archive\FoldersSkipped + 1
+              ElseIf (DestSize >= 0)
+                *Archive\FolderErrors + 1
+              ElseIf (CreateDirectoryRecursive(DestPath))
+                ;If (PreserveModifiedDate) ; doesn't apply to folders?
+                ;  SetModifiedDate(DestPath, *Archive\Entry()\Modified)
+                ;EndIf
+                *Archive\FoldersExtracted + 1
+              Else
+                *Archive\FolderErrors + 1
+              EndIf
+            EndIf
+          Next
+          
+          ForEach *Archive\Entry()
+            If (*Archive\Entry()\Size >= 0)
+              DestPath = *Archive\Entry()\Name
+              If (SkipChars)
+                DestPath = Mid(DestPath, 1 + SkipChars)
+              EndIf
+              DestPath = Destination + DestPath
+              DestSize = FileSize(DestPath)
+              If (DestSize = #PB_FileSize_Directory)
+                *Archive\FileErrors + 1
+              ElseIf (Overwrite Or (FileSize(DestPath) = #PB_FileSize_Missing))
+                If (UncompressPackFile(*Archive\Pack, DestPath, *Archive\Entry()\Name))
+                  If (PreserveModifiedDate)
+                    SetModifiedDate(DestPath, *Archive\Entry()\Modified)
+                  EndIf
+                  If (FileSize(DestPath) = *Archive\Entry()\Size)
+                    *Archive\FilesExtracted + 1
+                  Else
+                    *Archive\FileErrors + 1
+                  EndIf
+                Else
+                  *Archive\FileErrors + 1
+                EndIf
+              Else
+                *Archive\FilesSkipped + 1
+              EndIf
+            EndIf
+          Next
+          
+          *Archive\ItemsExtracted = *Archive\FilesExtracted + *Archive\FoldersExtracted
+          *Archive\ItemsSkipped   = *Archive\FilesSkipped + *Archive\FoldersSkipped
+          *Archive\ItemErrors     = *Archive\FileErrors + *Archive\FolderErrors
+          If (*Archive\ItemsExtracted + *Archive\ItemsSkipped > 0);If (*Archive\ItemsExtracted > 0)
+            If (*Archive\ItemErrors = 0);(#True)
+              Result = #True
+            EndIf
+          EndIf
+          
+        EndIf
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure.i ExamineArchive(*Archive.Archive)
+      Protected Result.i = #False
+      If (*Archive And *Archive\Pack)
+        If (ExaminePack(*Archive\Pack))
+          ClearList(*Archive\Entry())
+          Protected *Entry.ArchiveEntry
+          NewMap FoundFolder.s()
+          Protected Name.s
+          While (NextPackEntry(*Archive\Pack))
+            Name = PackEntryName(*Archive\Pack)
+            CompilerIf (#False)
+              ReplaceStringInPlace(Name, "\", "/")
+            CompilerEndIf
+            If (PackEntryType(*Archive\Pack) = #PB_Packer_Directory)
+              Name = EnsureForwardSlash(Name)
+              Name + "./" ; just so it gets added in the 'Add Parent Folders' loop below
+            Else
+              Name = RemovePathSeparator(Name)
+              *Entry = AddElement(*Archive\Entry())
+              *Entry\Name = Name
+              *Entry\Size = PackEntrySize(*Archive\Pack, #PB_Packer_UncompressedSize)
+              *Entry\Modified = PackEntryDate(*Archive\Pack, #PB_Date_Modified)
+            EndIf
+            While (#True)
+              Name = GetParentDirectory(Name)
+              If (Name = "")
+                Break
+              ElseIf (Not FindMapElement(FoundFolder(), Name))
+                AddMapElement(FoundFolder(), Name)
+                *Entry = AddElement(*Archive\Entry())
+                *Entry\Name = Name
+                *Entry\Size = #PB_FileSize_Directory
+                *Entry\Modified = PackEntryDate(*Archive\Pack, #PB_Date_Modified)
+              EndIf
+            Wend
+          Wend
+          If (#True)
+            SortStructuredList(*Archive\Entry(), #PB_Sort_Ascending|#PB_Sort_NoCase, OffsetOf(ArchiveEntry\Name), #PB_String)
+          EndIf
+          
+          *Archive\NumFiles   = 0
+          *Archive\NumFolders = 0
+          *Archive\TopLevelFiles = 0
+          *Archive\TopLevelFolders = 0
+          ForEach *Archive\Entry()
+            If (*Archive\Entry()\Size = #PB_FileSize_Directory)
+              *Archive\NumFolders + 1
+              If (GetPathPart(RemovePathSeparator(*Archive\Entry()\Name)) = "")
+                *Archive\TopLevelFolders + 1
+                If (*Archive\TopLevelFolders = 1)
+                  *Archive\TopLevelFolderName = *Archive\Entry()\Name
+                EndIf
+              EndIf
+            Else
+              *Archive\NumFiles + 1
+              If (GetPathPart(*Archive\Entry()\Name) = "")
+                *Archive\TopLevelFiles + 1
+                If (*Archive\TopLevelFiles = 1)
+                  *Archive\TopLevelFileName = *Archive\Entry()\Name
+                EndIf
+              EndIf
+            EndIf
+          Next
+          If (*Archive\TopLevelFiles <> 1)
+            *Archive\TopLevelFileName = ""
+          EndIf
+          If (*Archive\TopLevelFolders <> 1)
+            *Archive\TopLevelFolderName = ""
+          EndIf
+          *Archive\TopLevelItems = *Archive\TopLevelFiles + *Archive\TopLevelFolders
+          
+          ResetList(*Archive\Entry())
+          *Archive\Examined = #True
+          Result = #True
+        EndIf
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure.i CloseArchive(*Archive.Archive)
+      If (*Archive)
+        ClearAndFreeList(*Archive\Entry())
+        If (*Archive\Pack)
+          ClosePack(*Archive\Pack)
+        EndIf
+        FreeStructure(*Archive)
+      EndIf
+      ProcedureReturn (#Null)
+    EndProcedure
+    
+    Procedure.i OpenArchive(File.s, PluginID.i = #PackerPlugin_Default)
+      Protected *Archive.Archive = #Null
+      If (File)
+        Protected Pack.i = OpenPackMultiPlugin(#PB_Any, File, PluginID)
+        If (Pack)
+          *Archive = AllocateStructure(Archive)
+          If (*Archive)
+            *Archive\Pack = Pack
+            *Archive\File = File
+          Else
+            ClosePack(Pack)
+          EndIf
+        EndIf
+      EndIf
+      ProcedureReturn (*Archive)
+    EndProcedure
+    
+  CompilerEndIf
+  
 CompilerEndIf
 ;-
