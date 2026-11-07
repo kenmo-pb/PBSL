@@ -39,6 +39,14 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
     ProcedureReturn (#Null)
   EndProcedure
   
+  Procedure.i ListRequesterWindow()
+    If (_ListRequesterWindow)
+      ProcedureReturn (_ListRequesterWindow)
+    EndIf
+    ;ProcedureReturn (#PB_Ignore)
+    ProcedureReturn (#Null)
+  EndProcedure
+  
   Procedure _ListRequesterUpdateFilter(Filter.i, ListView.i, List String.s())
     Protected PrevSel.i = GetGadgetState(ListView)
     Protected PrevSelText.s = ""
@@ -81,16 +89,19 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
     EndIf
   EndProcedure
   
-  Procedure.s ListRequester(Title.s, Message.s, List String.s(), Flags.i = #Null, ParentWindow.i = #PB_Ignore, Callback.PBSL_ListRequesterCallback = #Null)
+  Procedure.s ListRequester(Title.s, Message.s, List String.s(), Flags.i = #Null, ParentID.i = #Null, Callback.PBSL_ListRequesterCallback = #Null)
     Protected Result.s = ""
     
     If (Flags = #PB_Default)
       Flags = #Null
     EndIf
     
-    Protected ParentID.i = #Null
-    If (ParentWindow <> #PB_Ignore)
-      ParentID = WindowID(ParentWindow)
+    Protected ParentWindow.i = #PB_Ignore
+    If (ParentID)
+      ParentWindow = GetWindowFromWindowID(ParentID)
+      If (ParentWindow = -1)
+        ParentWindow = #PB_Ignore
+      EndIf
     EndIf
     If (ListSize(String()) > 0)
       PushListPosition(String())
@@ -175,6 +186,9 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
         EndIf
         SetActiveWindow(_ListRequesterWindow)
         If (Flags & #ListRequester_Filter)
+          If (ListSize(String()) = 1)
+            SetGadgetState(ListView, 0)
+          EndIf
           SetActiveGadget(Filter)
         Else
           SetGadgetState(ListView, 0)
