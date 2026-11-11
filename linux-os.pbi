@@ -86,6 +86,38 @@ CompilerIf (Not Defined(_PBSL_LinuxOS_Included, #PB_Constant))
       ProcedureReturn (Bool(GetDisplayServer() = #DisplayServer_Wayland))
     EndProcedure
     
+    Procedure.i AssociateExtensionWithMIMEType(Extension.s, MIMEType.s, Description.s = "")
+      Protected Result.i = #False
+      ; https://saveriomiroddi.github.io/Linux-associating-file-types-to-applications/
+      Extension = LCase(RemoveString(RemoveString(Extension, "*"), "."))
+      If (Extension And MIMEType)
+        If (Description = "")
+          Description = UCase(Extension) + " File"
+        EndIf
+        ;Protected Folder.s = "/usr/share/mime/"
+        Protected Folder.s = GetHomeDirectory() + ".local/share/mime/"
+        If (FolderExists(Folder))
+          Protected File.s = Folder + "packages/" + Extension + ".xml"
+          CreateDirectory(GetPathPart(File))
+          Protected FN.i = CreateFile(#PB_Any, File)
+          If (FN)
+            WriteStringLF(FN, SDQuote("<?xml version='1.0' encoding='UTF-8'?>"))
+            WriteStringLF(FN, SDQuote("<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>"))
+            WriteStringLF(FN, SDQuote("<mime-type type='" + MIMEType + "'>"))
+            WriteStringLF(FN, "<comment>" + Description + "</comment>") ; TODO escape XML chars!
+            WriteStringLF(FN, SDQuote("<glob pattern='" + "*." + Extension + "'/>"))
+            WriteStringLF(FN, "</mime-type>")
+            WriteStringLF(FN, "</mime-info>")
+            CloseFile(FN)
+            If (RunProgramWaitHidden("update-mime-database", Quote(Folder), GetCurrentDirectory()))
+              Result = #True
+            EndIf
+          EndIf
+        EndIf
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
   CompilerEndIf
   
 CompilerEndIf
