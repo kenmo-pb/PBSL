@@ -16,11 +16,11 @@ CompilerIf (Not Defined(_PBSL_Animation_Included, #PB_Constant))
   ;- - Animation Constants
   
   Enumeration ; AnimationTimer Status
+    #AnimationTimer_Freeing = -1
+    ;
     #AnimationTimer_Invalid = 0
     #AnimationTimer_Paused
     #AnimationTimer_Playing
-    ;
-    #AnimationTimer_Freeing
   EndEnumeration
   
   #AnimationTimer_LoopForever = -1

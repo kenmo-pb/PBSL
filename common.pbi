@@ -517,6 +517,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "preferences.pbi"
     IncludeFile "gadget-sizes.pbi"
     IncludeFile "list-requester.pbi"
+    IncludeFile "timer.pbi"
     IncludeFile "animation.pbi"
     IncludeFile "scale-image.pbi"
     IncludeFile "vector-drawing.pbi"
