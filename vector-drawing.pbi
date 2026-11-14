@@ -84,23 +84,27 @@ CompilerIf (Not Defined(_PBSL_VectorDrawing_Included, #PB_Constant))
     EndProcedure
     
     Procedure FillVectorPartialCircle(x.d, y.d, Radius.d, StartDegreesCW.d, EndDegreesCW.d, RGBA.q = #PB_Ignore)
-      SaveVectorState()
-      AddPathPartialCircle(x, y, Radius, StartDegreesCW, EndDegreesCW)
-      If (RGBA <> #PB_Ignore)
-        VectorSourceColor(RGBA & $FFFFFFFF)
+      If (StartDegreesCW <> EndDegreesCW)
+        SaveVectorState()
+        AddPathPartialCircle(x, y, Radius, StartDegreesCW, EndDegreesCW)
+        If (RGBA <> #PB_Ignore)
+          VectorSourceColor(RGBA & $FFFFFFFF)
+        EndIf
+        FillPath()
+        RestoreVectorState()
       EndIf
-      FillPath()
-      RestoreVectorState()
     EndProcedure
     
     Procedure StrokeVectorPartialCircle(x.d, y.d, Radius.d, StartDegreesCW.d, EndDegreesCW.d, StrokeWidth.d, RGBA.q = #PB_Ignore)
-      SaveVectorState()
-      AddPathPartialCircle(x, y, Radius, StartDegreesCW, EndDegreesCW)
-      If (RGBA <> #PB_Ignore)
-        VectorSourceColor(RGBA & $FFFFFFFF)
+      If (StartDegreesCW <> EndDegreesCW)
+        SaveVectorState()
+        AddPathPartialCircle(x, y, Radius, StartDegreesCW, EndDegreesCW)
+        If (RGBA <> #PB_Ignore)
+          VectorSourceColor(RGBA & $FFFFFFFF)
+        EndIf
+        StrokePath(StrokeWidth)
+        RestoreVectorState()
       EndIf
-      StrokePath(StrokeWidth)
-      RestoreVectorState()
     EndProcedure
     
     Procedure FillVectorRoundBox(x.d, y.d, Width.d, Height.d, Radius.d, RGBA.q = #PB_Ignore)
