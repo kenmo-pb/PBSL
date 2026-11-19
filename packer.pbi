@@ -198,6 +198,11 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
       ItemsSkipped.i
       ItemErrors.i
       
+      ; Boolean Options
+      DeduplicateTopFolder.i
+      Overwrite.i
+      PreserveModifiedDate.i
+      
       List Entry.ArchiveEntry()
     EndStructure
     
@@ -223,15 +228,10 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
         
         _EnsureArchiveExamined(*Archive)
         
-        ; TODO - Make these all optional
-        Protected Overwrite.i = #True
-        Protected DeduplicateTopFolder.i = #True
-        Protected PreserveModifiedDate.i = #True
-        
         If (CreateDirectoryRecursive(Destination))
           
           Protected SkipChars.i = 0
-          If (DeduplicateTopFolder)
+          If (*Archive\DeduplicateTopFolder)
             If ((*Archive\TopLevelFolders = 1) And (*Archive\TopLevelFiles = 0))
               If (GetTopDirectoryName(Destination) + "/" = *Archive\TopLevelFolderName)
                 SkipChars = Len(*Archive\TopLevelFolderName)
@@ -282,10 +282,12 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
               DestSize = FileSize(DestPath)
               If (DestSize = #PB_FileSize_Directory)
                 *Archive\FileErrors + 1
-              ElseIf (Overwrite Or (FileSize(DestPath) = #PB_FileSize_Missing))
+              ElseIf (*Archive\Overwrite Or (FileSize(DestPath) = #PB_FileSize_Missing))
                 If (UncompressPackFile(*Archive\Pack, DestPath, *Archive\Entry()\Name))
-                  If (PreserveModifiedDate)
+                  If (*Archive\PreserveModifiedDate)
                     SetModifiedDate(DestPath, *Archive\Entry()\Modified)
+                  ElseIf (#True)
+                    SetModifiedDate(DestPath, Date())
                   EndIf
                   If (FileSize(DestPath) = *Archive\Entry()\Size)
                     *Archive\FilesExtracted + 1
@@ -414,6 +416,10 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
           If (*Archive)
             *Archive\Pack = Pack
             *Archive\File = File
+            
+            *Archive\DeduplicateTopFolder = #True
+            *Archive\Overwrite = #True
+            *Archive\PreserveModifiedDate = #True
           Else
             ClosePack(Pack)
           EndIf
