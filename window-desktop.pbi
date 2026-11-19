@@ -130,11 +130,6 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
       AddKeyboardShortcut((_Window), #PB_Shortcut_Return, (_MenuItem))
     EndMacro
     
-    Macro AddAndBindShortcut(_Window, _Key, _MenuItem, _Callback)
-      AddKeyboardShortcut((_Window), (_Key), (_MenuItem))
-      BindEvent(#PB_Event_Menu, (_Callback), (_Window), (_MenuItem))
-    EndMacro
-    
     Macro CurrentGadgetList()
       UseGadgetList(0) ; "If 'WindowID' is 0, the current GadgetList window will be returned and nothing will be changed."
     EndMacro
@@ -219,6 +214,18 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
         EndIf
       EndIf
       ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure AddAndBindShortcut(Window.i, Key.i, MenuItem.i, Callback.i)
+      If (MenuItem = #PB_Any)
+        MenuItem = RegisterCustomMenuItem()
+      EndIf
+      If (Key)
+        AddKeyboardShortcut(Window, Key, MenuItem)
+        If (Callback)
+          BindEvent(#PB_Event_Menu, Callback, Window, MenuItem)
+        EndIf
+      EndIf
     EndProcedure
     
     CompilerIf (#PB_Compiler_OS = #PB_OS_Windows)
