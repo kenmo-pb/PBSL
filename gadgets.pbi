@@ -62,6 +62,21 @@ CompilerIf (Not Defined(_PBSL_Gadgets_Included, #PB_Constant))
     FreeGadget(TextGadget(#PB_Any, 0, 0, 20, 20, ""))
   EndMacro
   
+  CompilerIf (#IsWindowsBuild And (#True))
+    Macro PostProgressBarUpdate(_ProgressBarGadget, _State)
+      PostMessage_(GadgetID(_ProgressBarGadget), #PBM_SETPOS, (_State), #Null)
+    EndMacro
+  CompilerElseIf (#IsWindowsBuild And (#False))
+    Procedure PostProgressBarUpdate(ProgressBarGadget.i, State.i)
+      SetGadgetState(ProgressBarGadget, State + 1)
+      SetGadgetState(ProgressBarGadget, State)
+    EndProcedure
+  CompilerElse
+    Macro PostProgressBarUpdate(_ProgressBarGadget, _State)
+      SetGadgetState((_ProgressBarGadget), (_State))
+    EndMacro
+  CompilerEndIf
+  
   ;-
   ;- Gadget Attribute Macros
   

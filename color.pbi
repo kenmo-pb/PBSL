@@ -251,5 +251,13 @@ CompilerIf (Not Defined(_PBSL_Color_Included, #PB_Constant))
     ProcedureReturn (Result)
   EndProcedure
   
+  Procedure.i ParseRGBA(Text.s)
+    ProcedureReturn (ParseColor(Text))
+  EndProcedure
+  
+  Procedure.i ParseRGB(Text.s)
+    ProcedureReturn (ParseColor(Text) & #RGBMask)
+  EndProcedure
+  
 CompilerEndIf
 ;-

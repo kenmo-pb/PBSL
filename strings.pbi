@@ -88,6 +88,22 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
     RSet(Hex((_Value), #PB_Quad), 16, "0")
   EndMacro
   
+  Macro Bin8(_Value)
+    RSet(Bin((_Value), #PB_Ascii), 8, "0")
+  EndMacro
+  Macro Bin16(_Value)
+    RSet(Bin((_Value), #PB_Unicode), 16, "0")
+  EndMacro
+  Macro Bin24(_Value)
+    RSet(Bin((_Value) & $00FFFFFF, #PB_Long), 24, "0")
+  EndMacro
+  Macro Bin32(_Value)
+    RSet(Bin((_Value), #PB_Long), 32, "0")
+  EndMacro
+  Macro Bin64(_Value)
+    RSet(Bin((_Value), #PB_Quad), 64, "0")
+  EndMacro
+  
   ;-
   ;- - String Manipulation
   

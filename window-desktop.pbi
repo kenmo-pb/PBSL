@@ -107,8 +107,8 @@ CompilerIf (Not Defined(_PBSL_WindowDesktop_Included, #PB_Constant))
       ResizeWindow((_Window), #PB_Ignore, #PB_Ignore, (_Width), (_Height))
     EndMacro
     
-    Macro ShowWindow(_Window)
-      HideWindow((_Window), #False)
+    Macro ShowWindow(_Window, _Flags = #Null)
+      HideWindow((_Window), #False, (_Flags))
     EndMacro
     
     Macro FlushWindowEvents()

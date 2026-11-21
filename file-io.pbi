@@ -11,6 +11,10 @@ CompilerIf (Not Defined(_PBSL_FileIO_Included, #PB_Constant))
   
   ;- - File Macros
   
+  Macro FileSkip(_File, _Bytes)
+    FileSeek((_File), (_Bytes), #PB_Relative)
+  EndMacro
+  
   Macro AppendFile(_File, _FileName, _Flags = #Null)
     OpenFile((_File), _FileName, (_Flags) | #PB_File_Append)
   EndMacro

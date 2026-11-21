@@ -51,6 +51,13 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
   CompilerEndIf
   #PB_Font_AllowedStyleMask = #PB_Font_Bold | #PB_Font_Italic | #PB_Font_Underline | #PB_Font_StrikeOut | #PB_Font_HighQuality
   
+  CompilerIf (Not Defined(PB_File_SharedRead, #PB_Constant))
+    #PB_File_SharedRead = 0
+  CompilerEndIf
+  CompilerIf (Not Defined(PB_File_SharedWrite, #PB_Constant))
+    #PB_File_SharedWrite = 0
+  CompilerEndIf
+  
   CompilerIf (Not Defined(PB_FontRequester_Effects, #PB_Constant))
     #PB_FontRequester_Effects = 0
   CompilerEndIf

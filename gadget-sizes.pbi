@@ -119,7 +119,7 @@ CompilerIf (Not Defined(_PBSL_GadgetSizes_Included, #PB_Constant))
             If (Dummy)
               Result = _PBGadgetRequiredHeight(Dummy)
             EndIf
-            ;Case #PB_GadgetType_Image
+          ;Case #PB_GadgetType_Image
           Case #PB_GadgetType_HyperLink
             Dummy = HyperLinkGadget(#PB_Any, 0, 0, 10, 10, " ", Flags)
             If (Dummy)
@@ -143,7 +143,7 @@ CompilerIf (Not Defined(_PBSL_GadgetSizes_Included, #PB_Constant))
             Result = 1.0 * StandardButtonHeight()
           Case #PB_GadgetType_Web
             Result = 16.0 * StandardTextGadgetHeight()
-            ;Case #PB_GadgetType_ButtonImage
+          ;Case #PB_GadgetType_ButtonImage
           Case #PB_GadgetType_Calendar
             Dummy = CalendarGadget(#PB_Any, 0, 0, 10, 10, Date(), Flags)
             If (Dummy)
