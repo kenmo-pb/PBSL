@@ -14,8 +14,10 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
   ;- - ListRequester Constants
   
   Enumeration ; ListRequester Flags
-    #ListRequester_MultiSelect = $01
-    #ListRequester_Filter      = $02
+    #ListRequester_MultiSelect      = $01
+    #ListRequester_Filter           = $02
+    #ListRequester_FilterAutoAccept = $04
+    #ListRequester_OKCancels        = $08
   EndEnumeration
   
   ;-
@@ -89,6 +91,13 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
     EndIf
   EndProcedure
   
+  Macro _ListRequesterOK()
+    PostEvent(#PB_Event_Menu, _ListRequesterWindow, 0)
+  EndMacro
+  Macro _ListRequesterCancel()
+    PostEvent(#PB_Event_Menu, _ListRequesterWindow, 1)
+  EndMacro
+  
   Procedure.s ListRequester(Title.s, Message.s, List String.s(), Flags.i = #Null, ParentID.i = #Null, Callback.PBSL_ListRequesterCallback = #Null)
     Protected Result.s = ""
     
@@ -146,6 +155,9 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
         EndIf
         
         Protected Filter.i = #Null
+        If (ListSize(String()) = 1)
+          Flags & (~#ListRequester_FilterAutoAccept)
+        EndIf
         If (Flags & #ListRequester_Filter)
           CompilerIf (PBGTE(630))
             Filter = StringGadget(#PB_Any, Padding, y, ContentsW, StandardStringGadgetHeight(), _PBSL_ListRequesterFilterLabel, #PB_String_PlaceHolder)
@@ -201,15 +213,28 @@ CompilerIf (Not Defined(_PBSL_ListRequester_Included, #PB_Constant))
           Event = WaitWindowEvent()
           If (EventWindow() = _ListRequesterWindow)
             If (Event = #PB_Event_CloseWindow)
-              Done = #True
+              _ListRequesterCancel()
             ElseIf (Event = #PB_Event_Gadget)
-              If ((EventGadget() = OKButton) Or ((EventGadget() = ListView) And (EventType() = #PB_EventType_LeftDoubleClick)))
-                PostEvent(#PB_Event_Menu, _ListRequesterWindow, 0)
+              If (EventGadget() = OKButton)
+                If (Flags & #ListRequester_OKCancels)
+                  _ListRequesterCancel()
+                Else
+                  _ListRequesterOK()
+                EndIf
+              ElseIf ((EventGadget() = ListView) And (EventType() = #PB_EventType_LeftDoubleClick))
+                _ListRequesterOK()
               ElseIf (EventGadget() = CancelButton)
-                PostEvent(#PB_Event_Menu, _ListRequesterWindow, 1)
+                _ListRequesterCancel()
               ElseIf (Filter And (EventGadget() = Filter))
                 If (EventType() = #PB_EventType_Change)
                   _ListRequesterUpdateFilter(Filter, ListView, String())
+                  If (Flags & #ListRequester_FilterAutoAccept)
+                    If (GetGadgetText(Filter))
+                      If (CountGadgetItems(ListView) = 1)
+                        _ListRequesterOK()
+                      EndIf
+                    EndIf
+                  EndIf
                 ElseIf (EventType() = #PB_EventType_Focus)
                   AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Up,       2)
                   AddKeyboardShortcut(_ListRequesterWindow, #PB_Shortcut_Down,     2)

@@ -118,6 +118,7 @@ CompilerIf (Not Defined(_PBSL_GadgetSizes_Included, #PB_Constant))
             Dummy = ComboBoxGadget(#PB_Any, 0, 0, 10, 10, Flags)
             If (Dummy)
               Result = _PBGadgetRequiredHeight(Dummy)
+              FinishOptionGadgetGroup()
             EndIf
           ;Case #PB_GadgetType_Image
           Case #PB_GadgetType_HyperLink
