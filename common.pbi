@@ -5,6 +5,7 @@
 ;-
 CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   #_PBSL_Common_Included = #True
+  #_PBSL_Included        = #True
   
   CompilerIf (#PB_Compiler_Version < 510) ; for Bool, IsMainFile, line continuation, etc.
     CompilerError "PBSL requires PureBasic 5.10 or newer"
@@ -479,20 +480,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
   CompilerEndIf
   
   ;-
-  ;- - OS Includes
-  
-  CompilerIf (#IsWindowsBuild)
-    IncludeFile "windows-os.pbi"
-  CompilerEndIf
-  CompilerIf (#IsLinuxBuild)
-    IncludeFile "linux-os.pbi"
-  CompilerEndIf
-  CompilerIf (#IsMacBuild)
-    IncludeFile "mac-os.pbi"
-  CompilerEndIf
-  
-  ;-
-  ;- - Library Includes
+  ;- - Default Includes
   
   CompilerIf (#True)
     IncludeFile "pb-compatibility.pbi"
@@ -510,6 +498,20 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "gadgets.pbi"
     IncludeFile "requesters.pbi"
   CompilerEndIf
+  
+  ;- - OS-Specific Includes
+  
+  CompilerIf (#IsWindowsBuild)
+    IncludeFile "windows-os.pbi"
+  CompilerEndIf
+  CompilerIf (#IsLinuxBuild)
+    IncludeFile "linux-os.pbi"
+  CompilerEndIf
+  CompilerIf (#IsMacBuild)
+    IncludeFile "mac-os.pbi"
+  CompilerEndIf
+  
+  ;- - Optional Includes
   
   CompilerIf (#PBSL_IncludeAll)
     IncludeFile "os-version.pbi"
