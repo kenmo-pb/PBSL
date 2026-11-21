@@ -167,7 +167,156 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
   CompilerIf (#True)
     
     ;-
+    ;- - ZIP Constants
+    
+    #ZIP_Attr_Error = -1 ; Don't use 0, because that could be valid File Attributes
+    
+    ; ZIP File Format 'Magic Numbers'
+    #ZIP_CDFH_Magic = $02014B50
+    #ZIP_LFH_Magic  = $04034B50
+    #ZIP_EOCD_Magic = $06054B50
+    
+    ; ZIP File Creator OS
+    #ZIP_OS_Windows = $00
+    #ZIP_OS_Amiga   = $01
+    #ZIP_OS_Unix    = $03
+    #ZIP_OS_Mac     = $07 ; Rarely used? Check for 'Unix' usually
+    
+    ; DOS Attribute Bits in ZIP File 'External Attributes'
+    #ZIP_DOSAttr_ReadOnly  = %000001 ; = #PB_FileSystem_ReadOnly
+    #ZIP_DOSAttr_Hidden    = %000010 ; = #PB_FileSystem_Hidden
+    #ZIP_DOSAttr_System    = %000100 ; = #PB_FileSystem_System
+    #ZIP_DOSAttr_Volume    = %001000
+    #ZIP_DOSAttr_Directory = %010000
+    #ZIP_DOSAttr_Archive   = %100000 ; = #PB_FileSystem_Archive
+    
+    ; Unix File Type Bits in ZIP File 'External Attributes'
+    #ZIP_UnixType_Mask      = $F0000000
+    #ZIP_UnixType_Directory = $40000000
+    #ZIP_UnixType_File      = $80000000
+    
+    ;-
+    ;- - ZIP Structures
+    
+    CompilerIf (Not Defined(ZIP_EOCD, #PB_Structure))
+      Structure ZIP_EOCD ; ZIP 'End Of Central Directory'
+        MagicNumber.l
+        ThisDiskNumber.u
+        StartDiskNumber.u
+        NumRecords.u
+        NumRecordsAllDisks.u
+        SizeOfCentralDirectory.l
+        OffsetOfCentralDirectory.l
+        CommentLength.u
+      EndStructure
+    CompilerEndIf
+    
+    CompilerIf (Not Defined(ZIP_CDFH, #PB_Structure))
+      Structure ZIP_CDFH ; ZIP 'Central Directory File Header'
+        MagicNumber.l
+        CreatorVersionLowerByte.a
+        CreatorOS.a;CreatorVersionUpper.a
+        MinExtractVersion.u
+        GeneralPurposeBits.u
+        CompressionMethod.u
+        ModificationTime.u
+        ModificationDate.u
+        CRC32.l
+        CompressedSize.l
+        UncompressedSize.l
+        NameLength.u
+        ExtraFieldLength.u
+        CommentLength.u
+        StartDisk.u
+        InternalAttributes.u
+        ExternalAttributes.l
+        OffsetOfLocalFile.l
+      EndStructure
+    CompilerEndIf
+    
+    ;-
+    ;- - ZIP Procedures
+    
+    Procedure.i ReadZIPAttributesToMap(ZIPFile.s, Map Attributes.l())
+      Protected Result.i = #False
+      ; https://en.wikipedia.org/wiki/ZIP_(file_format)
+      ; https://unix.stackexchange.com/questions/14705/the-zip-formats-external-file-attribute
+      ; https://lukebemish.dev/2026/01/29/zip-files.html
+      ClearMap(Attributes())
+      If (ZIPFile)
+        Protected FN.i = ReadFile(#PB_Any, ZIPFile, #PB_File_SharedRead)
+        If (FN)
+          If (Lof(FN) >= SizeOf(ZIP_EOCD))
+            Protected EOCD.ZIP_EOCD
+            FileSeek(FN, Lof(FN) - SizeOf(ZIP_EOCD))
+            If (ReadData(FN, @EOCD, SizeOf(ZIP_EOCD)) = SizeOf(ZIP_EOCD))
+              If (EOCD\MagicNumber = #ZIP_EOCD_Magic)
+                If (EOCD\CommentLength = $0000)
+                  If (EOCD\NumRecords > 0)
+                    If ((EOCD\OffsetOfCentralDirectory > 0) And (EOCD\OffsetOfCentralDirectory < Lof(FN)))
+                      Result = #True
+                      FileSeek(FN, EOCD\OffsetOfCentralDirectory)
+                      Protected CDFH.ZIP_CDFH
+                      Protected i.i
+                      While (i < EOCD\NumRecords)
+                        If (ReadData(FN, @CDFH, SizeOf(ZIP_CDFH)) = SizeOf(ZIP_CDFH))
+                          If (CDFH\MagicNumber = #ZIP_CDFH_Magic)
+                            If (CDFH\NameLength > 0)
+                              Protected Name.s = ReadString(FN, #PB_Ascii, CDFH\NameLength) ; TODO Should handle 
+                              If (Name)
+                                Attributes(Name) = CDFH\ExternalAttributes
+                              EndIf
+                              FileSkip(FN, CDFH\ExtraFieldLength)
+                              FileSkip(FN, CDFH\CommentLength)
+                            Else
+                              Result = #False
+                              Break
+                            EndIf
+                          Else
+                            Result = #False
+                            Break
+                          EndIf
+                        Else
+                          Result = #False
+                          Break
+                        EndIf
+                        i + 1
+                      Wend
+                    EndIf
+                  EndIf
+                EndIf
+              EndIf
+            EndIf
+          EndIf
+          CloseFile(FN)
+        EndIf
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure.l FormatZIPAttributesForOS(Attributes.l, OS.i = #PB_Default)
+      If (Attributes <> #ZIP_Attr_Error)
+        If (OS = #PB_Default)
+          OS = #PB_Compiler_OS
+        EndIf
+        Select (OS)
+          Case #PB_OS_Windows
+            Attributes & (#ZIP_DOSAttr_ReadOnly | #ZIP_DOSAttr_Hidden | #ZIP_DOSAttr_System) ; do not preserve #ZIP_DOSAttr_Archive
+          Default ; Mac/Linux/Unix
+            Attributes = (Attributes >> 16) & $01FF ; (9) Read/Write/Execute Bits
+        EndSelect
+      EndIf
+      ProcedureReturn (Attributes)
+    EndProcedure
+    
+  CompilerEndIf
+  
+  CompilerIf (#True)
+    
+    ;-
     ;- - Archive Structures
+    
+    Prototype ExtractArchiveProgressCallback(ItemsComplete.i, TotalItems.i)
     
     Structure ArchiveEntry
       Name.s
@@ -198,12 +347,16 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
       ItemsSkipped.i
       ItemErrors.i
       
+      ProgressCallback.ExtractArchiveProgressCallback ; see Prototype above
+      
       ; Boolean Options
       DeduplicateTopFolder.i
       Overwrite.i
       PreserveModifiedDate.i
+      PreserveFileAttributes.i
       
       List Entry.ArchiveEntry()
+      Map  Attributes.l()
     EndStructure
     
     ;-
@@ -217,6 +370,84 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
         Result = #True
       Else
         Result = ExamineArchive(*Archive)
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure.i _ExtractArchiveCurrentFile(*Archive.Archive, DestPath.s)
+      Protected Result.i = #False
+      
+      ; Originally all within bulk ExtractArchive() ...
+      Protected DestSize.q = FileSize(DestPath)
+      If (DestSize = #PB_FileSize_Directory)
+        *Archive\FileErrors + 1
+      ElseIf (*Archive\Overwrite Or (FileSize(DestPath) = #PB_FileSize_Missing))
+        If (UncompressPackFile(*Archive\Pack, DestPath, *Archive\Entry()\Name))
+          If (FileSize(DestPath) = *Archive\Entry()\Size)
+            
+            If (*Archive\PreserveModifiedDate)
+              SetModifiedDate(DestPath, *Archive\Entry()\Modified)
+            ElseIf (#True)
+              SetModifiedDate(DestPath, Date())
+            EndIf
+            
+            If (*Archive\PreserveFileAttributes)
+              If (FindMapElement(*Archive\Attributes(), *Archive\Entry()\Name))
+                If (*Archive\Attributes() <> #ZIP_Attr_Error)
+                  SetFileAttributes(DestPath, FormatZIPAttributesForOS(*Archive\Attributes()))
+                EndIf
+              EndIf
+            EndIf
+            
+            *Archive\FilesExtracted + 1
+            Result = #True
+          Else
+            *Archive\FileErrors + 1
+          EndIf
+        Else
+          *Archive\FileErrors + 1
+        EndIf
+      Else
+        *Archive\FilesSkipped + 1
+      EndIf
+      
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure.i _SelectArchiveFile(*Archive.Archive, InternalFile.s)
+      Protected Result.i = #False
+      ForEach (*Archive\Entry())
+        If (*Archive\Entry()\Name = InternalFile)
+          Result = #True
+          Break
+        EndIf
+      Next
+      ProcedureReturn (Result)
+    EndProcedure
+    
+    Procedure.i ExtractArchiveFile(*Archive.Archive, InternalFile.s, Destination.s = "", CreateDir.i = #False)
+      Protected Result.i = #False
+      If (*Archive And InternalFile)
+        If (_SelectArchiveFile(*Archive, InternalFile))
+          If (Destination = "")
+            Destination = GetCurrentDirectory()
+          EndIf
+          Protected DestPath.s
+          If (EndsWith(Destination, "/") Or (#IsWindowsBuild And EndsWith(Destination, "\")))
+            DestPath = Destination + GetFilePart(InternalFile)
+          ElseIf (FolderExists(Destination))
+            DestPath = Destination + #PS$ + GetFilePart(InternalFile)
+          Else
+            DestPath = Destination ; already a file
+          EndIf
+          
+          If ((Not CreateDir) Or CreateDirectoryRecursive(GetPathPart(DestPath)))
+            Result = _ExtractArchiveCurrentFile(*Archive, DestPath)
+          Else
+            *Archive\FileErrors + 1
+          EndIf
+          
+        EndIf
       EndIf
       ProcedureReturn (Result)
     EndProcedure
@@ -262,9 +493,16 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
               ElseIf (DestSize >= 0)
                 *Archive\FolderErrors + 1
               ElseIf (CreateDirectoryRecursive(DestPath))
-                ;If (PreserveModifiedDate) ; doesn't apply to folders?
+                ;If (*Archive\PreserveModifiedDate) ; doesn't apply to folders?
                 ;  SetModifiedDate(DestPath, *Archive\Entry()\Modified)
                 ;EndIf
+                If (*Archive\PreserveFileAttributes)
+                  If (FindMapElement(*Archive\Attributes(), *Archive\Entry()\Name))
+                    If (*Archive\Attributes() <> #ZIP_Attr_Error)
+                      SetFileAttributes(DestPath, FormatZIPAttributesForOS(*Archive\Attributes()))
+                    EndIf
+                  EndIf
+                EndIf
                 *Archive\FoldersExtracted + 1
               Else
                 *Archive\FolderErrors + 1
@@ -279,29 +517,18 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
                 DestPath = Mid(DestPath, 1 + SkipChars)
               EndIf
               DestPath = Destination + DestPath
-              DestSize = FileSize(DestPath)
-              If (DestSize = #PB_FileSize_Directory)
-                *Archive\FileErrors + 1
-              ElseIf (*Archive\Overwrite Or (FileSize(DestPath) = #PB_FileSize_Missing))
-                If (UncompressPackFile(*Archive\Pack, DestPath, *Archive\Entry()\Name))
-                  If (*Archive\PreserveModifiedDate)
-                    SetModifiedDate(DestPath, *Archive\Entry()\Modified)
-                  ElseIf (#True)
-                    SetModifiedDate(DestPath, Date())
-                  EndIf
-                  If (FileSize(DestPath) = *Archive\Entry()\Size)
-                    *Archive\FilesExtracted + 1
-                  Else
-                    *Archive\FileErrors + 1
-                  EndIf
-                Else
-                  *Archive\FileErrors + 1
-                EndIf
-              Else
-                *Archive\FilesSkipped + 1
+              _ExtractArchiveCurrentFile(*Archive, DestPath)
+              If (*Archive\ProgressCallback)
+                *Archive\ProgressCallback(*Archive\FilesExtracted + *Archive\FilesSkipped + *Archive\FileErrors, *Archive\NumFiles)
               EndIf
             EndIf
           Next
+          
+          If (*Archive\ProgressCallback)
+            If (*Archive\NumFiles = 0)
+              *Archive\ProgressCallback(1, 1)
+            EndIf
+          EndIf
           
           *Archive\ItemsExtracted = *Archive\FilesExtracted + *Archive\FoldersExtracted
           *Archive\ItemsSkipped   = *Archive\FilesSkipped + *Archive\FoldersSkipped
@@ -353,13 +580,13 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
               EndIf
             Wend
           Wend
-          If (#True)
+          If (#False) ; May be faster to extract archive if in-archive order is maintained?
             SortStructuredList(*Archive\Entry(), #PB_Sort_Ascending|#PB_Sort_NoCase, OffsetOf(ArchiveEntry\Name), #PB_String)
           EndIf
           
-          *Archive\NumFiles   = 0
-          *Archive\NumFolders = 0
-          *Archive\TopLevelFiles = 0
+          *Archive\NumFiles        = 0
+          *Archive\NumFolders      = 0
+          *Archive\TopLevelFiles   = 0
           *Archive\TopLevelFolders = 0
           ForEach *Archive\Entry()
             If (*Archive\Entry()\Size = #PB_FileSize_Directory)
@@ -387,8 +614,17 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
             *Archive\TopLevelFolderName = ""
           EndIf
           *Archive\TopLevelItems = *Archive\TopLevelFiles + *Archive\TopLevelFolders
+          If ((*Archive\TopLevelItems > 1) And (#True))
+            *Archive\TopLevelFileName   = ""
+            *Archive\TopLevelFolderName = ""
+          EndIf
           
           ResetList(*Archive\Entry())
+          
+          If (#True)
+            ReadZIPAttributesToMap(*Archive\File, *Archive\Attributes())
+          EndIf
+          
           *Archive\Examined = #True
           Result = #True
         EndIf
@@ -399,6 +635,7 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     Procedure.i CloseArchive(*Archive.Archive)
       If (*Archive)
         ClearAndFreeList(*Archive\Entry())
+        ClearAndFreeMap(*Archive\Attributes())
         If (*Archive\Pack)
           ClosePack(*Archive\Pack)
         EndIf
@@ -417,9 +654,12 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
             *Archive\Pack = Pack
             *Archive\File = File
             
-            *Archive\DeduplicateTopFolder = #True
-            *Archive\Overwrite = #True
-            *Archive\PreserveModifiedDate = #True
+            *Archive\DeduplicateTopFolder   = #True
+            *Archive\Overwrite              = #True
+            *Archive\PreserveModifiedDate   = #True
+            *Archive\PreserveFileAttributes = #True
+            
+            *Archive\ProgressCallback       = #Null
           Else
             ClosePack(Pack)
           EndIf
