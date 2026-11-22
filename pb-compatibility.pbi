@@ -58,6 +58,16 @@ CompilerIf (Not Defined(_PBSL_PBCompatibility_Included, #PB_Constant))
     #PB_File_SharedWrite = 0
   CompilerEndIf
   
+  #PB_FileSystem_ExecAll    = %000000001
+  #PB_FileSystem_WriteAll   = %000000010
+  #PB_FileSystem_ReadAll    = %000000100
+  #PB_FileSystem_ExecGroup  = %000001000
+  #PB_FileSystem_WriteGroup = %000010000
+  #PB_FileSystem_ReadGroup  = %000100000
+  #PB_FileSystem_ExecUser   = %001000000
+  #PB_FileSystem_WriteUser  = %010000000
+  #PB_FileSystem_ReadUser   = %100000000
+  
   CompilerIf (Not Defined(PB_FontRequester_Effects, #PB_Constant))
     #PB_FontRequester_Effects = 0
   CompilerEndIf

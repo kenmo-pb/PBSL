@@ -190,6 +190,9 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     #ZIP_DOSAttr_Directory = %010000
     #ZIP_DOSAttr_Archive   = %100000 ; = #PB_FileSystem_Archive
     
+    #ZIP_UnixAttributes_Default = #PB_FileSystem_ReadUser | #PB_FileSystem_WriteUser | #PB_FileSystem_ReadGroup | #PB_FileSystem_WriteGroup | #PB_FileSystem_ReadAll
+    #ZIP_UnixAttributes_Minimum = #PB_FileSystem_ReadUser | #PB_FileSystem_WriteUser
+    
     ; Unix File Type Bits in ZIP File 'External Attributes'
     #ZIP_UnixType_Mask      = $F0000000
     #ZIP_UnixType_Directory = $40000000
@@ -394,7 +397,14 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
             If (*Archive\PreserveFileAttributes)
               If (FindMapElement(*Archive\Attributes(), *Archive\Entry()\Name))
                 If (*Archive\Attributes() <> #ZIP_Attr_Error)
-                  SetFileAttributes(DestPath, FormatZIPAttributesForOS(*Archive\Attributes()))
+                  Protected Attr.i = FormatZIPAttributesForOS(*Archive\Attributes())
+                  CompilerIf (#IsUnixBuild)
+                    If (Attr = 0)
+                      Attr = #ZIP_UnixAttributes_Default
+                    EndIf
+                    Attr | #ZIP_UnixAttributes_Minimum
+                  CompilerEndIf
+                  SetFileAttributes(DestPath, Attr)
                 EndIf
               EndIf
             EndIf
