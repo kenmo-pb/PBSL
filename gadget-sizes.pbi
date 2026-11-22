@@ -643,7 +643,6 @@ CompilerIf (Not Defined(_PBSL_GadgetSizes_Included, #PB_Constant))
         Next i
       Case #PB_GadgetType_ListIcon
         N = GetGadgetAttribute(Gadget, #PB_ListIcon_ColumnCount)
-        Debug N
         Width = 0
         For i = 0 To (N-1)
           Width + GetGadgetItemAttribute(Gadget, 0, #PB_ListIcon_ColumnWidth, i)
@@ -668,15 +667,6 @@ CompilerIf (Not Defined(_PBSL_GadgetSizes_Included, #PB_Constant))
         Next i
       Case #PB_GadgetType_Web, #PB_GadgetType_ExplorerList
         Result = GadgetPreferredHeight(Gadget) * 4 / 3
-      Case #PB_GadgetType_ListIcon
-        N = GetGadgetAttribute(Gadget, #PB_ListIcon_ColumnCount)
-        Debug N
-        Width = 0
-        For i = 0 To (N-1)
-          Width + GetGadgetItemAttribute(Gadget, 0, #PB_ListIcon_ColumnWidth, i)
-        Next i
-        Width + 1.5 * StandardScrollbarSize()
-        Result = Width
       Case #PB_GadgetType_Tree
         If ((Not DummyText) Or (Not IsGadget(DummyText)))
           EnsureGadgetListOpen()
