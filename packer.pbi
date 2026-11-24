@@ -167,6 +167,122 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
   CompilerIf (#True)
     
     ;-
+    ;- - TAR Constants
+    
+    #TAR_Attr_Error = -1
+    
+    #TAR_FileType_Normal       = 0
+    #TAR_FileType_HardLink     = 1
+    #TAR_FileType_SymbolicLink = 2
+    
+    ; UStar Extended Types
+    
+    #TAR_FileType_Directory = 5
+    
+    ;- - TAR Structures
+    
+    CompilerIf (Not Defined(TAR_FileHeader, #PB_Structure))
+      Structure TAR_FileHeader
+        FileName.a[100] ; ASCII
+        FileMode.a[8] ; octal
+        OwnerID.a[8] ; octal
+        GroupID.a[8] ; octal
+        FileSize.a[12] ; octal
+        Modified.a[12] ; octal
+        Checksum.a[8]
+        FileType.a
+        LinkName.a[100] ; ASCII
+        ;
+        CompilerIf (#True) ; UStar extended header
+          UStarTag.a[6] ; "ustar" in ASCII
+          UStarVersion.u
+          OwnerName.a[32]
+          OwnerGroupName.a[32]
+          DeviceMajorNum.a[8]
+          DeviceMinorNum.a[8]
+          FilenamePrefix.a[155]
+          ;
+          _Padding.a[12]
+        CompilerElse
+          _Padding.a[255]
+        CompilerEndIf
+      EndStructure
+    CompilerEndIf
+    
+    ;- - TAR Procedures
+    
+    Procedure.l FormatTARAttributesForOS(Attributes.l, OS.i = #PB_Default)
+      If (Attributes <> #TAR_Attr_Error)
+        OS = MapPBDefault(OS, #PB_Compiler_OS)
+        Select (OS)
+          Case #PB_OS_Windows
+            Attributes = 0 ; TAR doesn't store DOS/Windows file attributes
+          Case #PB_Ignore
+            ; leave as-is
+          Default ; Mac/Linux/Unix
+            Attributes = Attributes & $01FF
+        EndSelect
+      EndIf
+      ProcedureReturn (Attributes)
+    EndProcedure
+    
+    Procedure.i ReadTARAttributesToMap(TARFile.s, Map Attributes.l(), OS.i = #PB_Default)
+      Protected Result.i = #False
+      ; https://en.wikipedia.org/wiki/Tar_(computing)
+      OS = MapPBDefault(OS, #PB_Compiler_OS)
+      ClearMap(Attributes())
+      If (TARFile)
+        Protected FN.i = ReadFile(#PB_Any, TARFile, #PB_File_SharedRead)
+        If (FN)
+          If (Lof(FN) >= SizeOf(TAR_FileHeader))
+            Protected Header.TAR_FileHeader
+            Result = #True
+            While (Not Eof(FN))
+              If (ReadData(FN, @Header, SizeOf(TAR_FileHeader)) = SizeOf(TAR_FileHeader))
+                Protected FileName.s = Trim(PeekS_Ascii(@Header\FileName[0], 100))
+                If (FileName)
+                  Protected FileSize.q = ValOctal(Trim(PeekS_Ascii(@Header\FileSize[0], 12)))
+                  If (FileSize >= 0)
+                    Protected Attr.l = ValOctal(Trim(PeekS_Ascii(@Header\FileMode[0], 8)))
+                    CompilerIf (#True)
+                      Select (OS)
+                        Case #PB_Ignore
+                          Attributes(FileName) = Attr
+                        Case #PB_OS_Windows
+                          Attributes(FileName) = 0
+                        Default ; Unix
+                          Attributes(FileName) = Attr & $01FF
+                      EndSelect
+                    CompilerElse
+                      Attr = FormatTARAttributesForOS(Attr, OS)
+                    CompilerEndIf
+                    FileSize = ((FileSize + 511) / 512) * 512 ; pad out to 512-byte blocks
+                    FileSkip(FN, FileSize)
+                  Else
+                    Result = #False
+                    Break
+                  EndIf
+                Else
+                  ;Result = #False
+                  Break
+                EndIf
+              Else
+                Result = #False
+                Break
+              EndIf
+            Wend
+          EndIf
+          CloseFile(FN)
+        EndIf
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
+    
+  CompilerEndIf
+  
+  CompilerIf (#True)
+    
+    ;-
     ;- - ZIP Constants
     
     #ZIP_Attr_Error = -1 ; Don't use 0, because that could be valid File Attributes
@@ -198,7 +314,6 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     #ZIP_UnixType_Directory = $40000000
     #ZIP_UnixType_File      = $80000000
     
-    ;-
     ;- - ZIP Structures
     
     CompilerIf (Not Defined(ZIP_EOCD, #PB_Structure))
@@ -237,10 +352,24 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
       EndStructure
     CompilerEndIf
     
-    ;-
     ;- - ZIP Procedures
     
-    Procedure.i ReadZIPAttributesToMap(ZIPFile.s, Map Attributes.l())
+    Procedure.l FormatZIPAttributesForOS(Attributes.l, OS.i = #PB_Default)
+      If (Attributes <> #ZIP_Attr_Error)
+        OS = MapPBDefault(OS, #PB_Compiler_OS)
+        Select (OS)
+          Case #PB_OS_Windows
+            Attributes & (#ZIP_DOSAttr_ReadOnly | #ZIP_DOSAttr_Hidden | #ZIP_DOSAttr_System) ; do not preserve #ZIP_DOSAttr_Archive
+          Case #PB_Ignore
+            ; leave as-is
+          Default ; Mac/Linux/Unix
+            Attributes = (Attributes >> 16) & $01FF ; (9) Read/Write/Execute Bits
+        EndSelect
+      EndIf
+      ProcedureReturn (Attributes)
+    EndProcedure
+    
+    Procedure.i ReadZIPAttributesToMap(ZIPFile.s, Map Attributes.l(), OS.i = #PB_Default)
       Protected Result.i = #False
       ; https://en.wikipedia.org/wiki/ZIP_(file_format)
       ; https://unix.stackexchange.com/questions/14705/the-zip-formats-external-file-attribute
@@ -265,9 +394,13 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
                         If (ReadData(FN, @CDFH, SizeOf(ZIP_CDFH)) = SizeOf(ZIP_CDFH))
                           If (CDFH\MagicNumber = #ZIP_CDFH_Magic)
                             If (CDFH\NameLength > 0)
-                              Protected Name.s = ReadString(FN, #PB_Ascii, CDFH\NameLength) ; TODO Should handle 
+                              Protected Name.s = ReadString(FN, #PB_Ascii, CDFH\NameLength) ; TODO Should handle Unicode extensions
                               If (Name)
-                                Attributes(Name) = CDFH\ExternalAttributes
+                                If (OS <> #PB_Ignore)
+                                  Attributes(Name) = FormatZIPAttributesForOS(CDFH\ExternalAttributes, OS)
+                                Else
+                                  Attributes(Name) = CDFH\ExternalAttributes
+                                EndIf
                               EndIf
                               FileSkip(FN, CDFH\ExtraFieldLength)
                               FileSkip(FN, CDFH\CommentLength)
@@ -297,21 +430,6 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
       ProcedureReturn (Result)
     EndProcedure
     
-    Procedure.l FormatZIPAttributesForOS(Attributes.l, OS.i = #PB_Default)
-      If (Attributes <> #ZIP_Attr_Error)
-        If (OS = #PB_Default)
-          OS = #PB_Compiler_OS
-        EndIf
-        Select (OS)
-          Case #PB_OS_Windows
-            Attributes & (#ZIP_DOSAttr_ReadOnly | #ZIP_DOSAttr_Hidden | #ZIP_DOSAttr_System) ; do not preserve #ZIP_DOSAttr_Archive
-          Default ; Mac/Linux/Unix
-            Attributes = (Attributes >> 16) & $01FF ; (9) Read/Write/Execute Bits
-        EndSelect
-      EndIf
-      ProcedureReturn (Attributes)
-    EndProcedure
-    
   CompilerEndIf
   
   CompilerIf (#True)
@@ -330,7 +448,10 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     Structure Archive
       Pack.i
       File.s
+      TempFile.s
       Examined.i
+      OSForAttributes.i
+      ExtractMS.q
       
       NumFiles.i
       NumFolders.i
@@ -362,10 +483,26 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
       Map  Attributes.l()
     EndStructure
     
-    ;-
     ;- - Archive Procedures
     
     Declare.i ExamineArchive(*Archive.Archive)
+    
+    Procedure.i ReadArchiveAttributesToMap(ArchiveFile.s, Map Attributes.l(), OS.i = #PB_Default)
+      Protected Result.i = #False
+      If (ArchiveFile)
+        CompilerIf (Defined(ReadZIPAttributesToMap, #PB_Procedure))
+          If (Not Result)
+            Result = ReadZIPAttributesToMap(ArchiveFile, Attributes(), OS)
+          EndIf
+        CompilerEndIf
+        CompilerIf (Defined(ReadTARAttributesToMap, #PB_Procedure))
+          If (Not Result)
+            Result = ReadTARAttributesToMap(ArchiveFile, Attributes(), OS)
+          EndIf
+        CompilerEndIf
+      EndIf
+      ProcedureReturn (Result)
+    EndProcedure
     
     Procedure.i _EnsureArchiveExamined(*Archive.Archive)
       Protected Result.i = #False
@@ -438,6 +575,8 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     Procedure.i ExtractArchiveFile(*Archive.Archive, InternalFile.s, Destination.s = "", CreateDir.i = #False)
       Protected Result.i = #False
       If (*Archive And InternalFile)
+        *Archive\ExtractMS = ElapsedMilliseconds()
+        _EnsureArchiveExamined(*Archive)
         If (_SelectArchiveFile(*Archive, InternalFile))
           If (Destination = "")
             Destination = GetCurrentDirectory()
@@ -458,6 +597,11 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
           EndIf
           
         EndIf
+        If (Result)
+          *Archive\ExtractMS = ElapsedMilliseconds() - *Archive\ExtractMS
+        Else
+          *Archive\ExtractMS = 0
+        EndIf
       EndIf
       ProcedureReturn (Result)
     EndProcedure
@@ -467,6 +611,7 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
       If (*Archive And Destination)
         Destination = EnsurePathSeparator(Destination)
         
+        *Archive\ExtractMS = ElapsedMilliseconds()
         _EnsureArchiveExamined(*Archive)
         
         If (CreateDirectoryRecursive(Destination))
@@ -550,6 +695,12 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
           EndIf
           
         EndIf
+        
+        If (Result)
+          *Archive\ExtractMS = ElapsedMilliseconds() - *Archive\ExtractMS
+        Else
+          *Archive\ExtractMS = 0
+        EndIf
       EndIf
       ProcedureReturn (Result)
     EndProcedure
@@ -632,7 +783,11 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
           ResetList(*Archive\Entry())
           
           If (#True)
-            ReadZIPAttributesToMap(*Archive\File, *Archive\Attributes())
+            If (*Archive\TempFile)
+              ReadArchiveAttributesToMap(*Archive\TempFile, *Archive\Attributes(), *Archive\OSForAttributes)
+            Else
+              ReadArchiveAttributesToMap(*Archive\File, *Archive\Attributes(), *Archive\OSForAttributes)
+            EndIf
           EndIf
           
           *Archive\Examined = #True
@@ -649,6 +804,9 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
         If (*Archive\Pack)
           ClosePack(*Archive\Pack)
         EndIf
+        If (*Archive\TempFile)
+          DeleteFile(*Archive\TempFile)
+        EndIf
         FreeStructure(*Archive)
       EndIf
       ProcedureReturn (#Null)
@@ -657,12 +815,26 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
     Procedure.i OpenArchive(File.s, PluginID.i = #PackerPlugin_Default)
       Protected *Archive.Archive = #Null
       If (File)
-        Protected Pack.i = OpenPackMultiPlugin(#PB_Any, File, PluginID)
+        Protected FileToUse.s = File
+        Protected TempFile.s = ""
+        CompilerIf (Defined(_PBSL_GZip_Included, #PB_Constant))
+          If (FileSeemsGZipped(File))
+            TempFile = UniqueFileName(GetFilePart(File), ".tar", GetTemporaryDirectory())
+            If (GZip_Decompress_FileToFile(File, TempFile))
+              FileToUse = TempFile
+            Else
+              TempFile = ""
+            EndIf
+          EndIf
+        CompilerEndIf
+        Protected Pack.i = OpenPackMultiPlugin(#PB_Any, FileToUse, PluginID)
         If (Pack)
           *Archive = AllocateStructure(Archive)
           If (*Archive)
             *Archive\Pack = Pack
             *Archive\File = File
+            
+            *Archive\TempFile = TempFile
             
             *Archive\DeduplicateTopFolder   = #True
             *Archive\Overwrite              = #True
@@ -670,6 +842,8 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
             *Archive\PreserveFileAttributes = #True
             
             *Archive\ProgressCallback       = #Null
+            
+            *Archive\OSForAttributes        = #PB_Default
           Else
             ClosePack(Pack)
           EndIf
