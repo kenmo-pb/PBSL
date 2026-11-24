@@ -530,6 +530,7 @@ CompilerIf (Not Defined(_PBSL_Common_Included, #PB_Constant))
     IncludeFile "network.pbi"
     IncludeFile "ftp.pbi"
     IncludeFile "json.pbi"
+    IncludeFile "gzip.pbi"
     IncludeFile "packer.pbi"
     IncludeFile "undo.pbi"
     IncludeFile "scintilla.pbi"
