@@ -109,6 +109,16 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
   
   Declare.s ChrU(Value.i)
   
+  Macro PeekS_Ascii(_Memory, _Length = -1)
+    PeekS((_Memory), (_Length), #PB_Ascii)
+  EndMacro
+  Macro PeekS_UTF8(_Memory, _Length = -1, _ByteLengthBool = #True)
+    PeekS((_Memory), (_Length), #PB_UTF8 | (Bool(_ByteLengthBool) * #PB_ByteLength))
+  EndMacro
+  Macro PeekS_Unicode(_Memory, _Length = -1)
+    PeekS((_Memory), (_Length), #PB_Unicode)
+  EndMacro
+  
   Macro FindStringNoCase(_String, _StringToFind, _StartPosition = 1)
     FindString(_String, _StringToFind, (_StartPosition), #PB_String_NoCase)
   EndMacro
@@ -232,6 +242,36 @@ CompilerIf (Not Defined(_PBSL_Strings_Included, #PB_Constant))
       EndIf
       ProcedureReturn (Str(N) + " " + Multiple)
     EndIf
+  EndProcedure
+  
+  Procedure.s StrOctal(Value.i)
+    Protected Result.s = ""
+    While (Value)
+      Result = Str(Value & %111) + Result
+      Value = (Value >> 3)
+    Wend
+    If (Result = "")
+      Result = "0"
+    EndIf
+    ProcedureReturn (Result)
+  EndProcedure
+  
+  Procedure.i ValOctal(String.s)
+    Protected Result.i = 0
+    Protected *C.CHARACTER = @String
+    While (*C\c)
+      Select (*C\c)
+        Case '0' To '7'
+          Result = (Result << 3) | (*C\c - '0')
+        Case #SP, #NUL
+          Break
+        Default
+          ;Result = 0
+          Break
+      EndSelect
+      *C + #CharSize
+    Wend
+    ProcedureReturn (Result)
   EndProcedure
   
   Procedure.i ParseBool(String.s)
