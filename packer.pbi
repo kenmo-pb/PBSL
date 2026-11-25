@@ -534,7 +534,7 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
             If (*Archive\PreserveFileAttributes)
               If (FindMapElement(*Archive\Attributes(), *Archive\Entry()\Name))
                 If (*Archive\Attributes() <> #ZIP_Attr_Error)
-                  Protected Attr.i = FormatZIPAttributesForOS(*Archive\Attributes())
+                  Protected Attr.i = *Archive\Attributes()
                   CompilerIf (#IsUnixBuild)
                     If (Attr = 0)
                       Attr = #ZIP_UnixAttributes_Default
@@ -654,7 +654,7 @@ CompilerIf (Not Defined(_PBSL_Packer_Included, #PB_Constant))
                 If (*Archive\PreserveFileAttributes)
                   If (FindMapElement(*Archive\Attributes(), *Archive\Entry()\Name))
                     If (*Archive\Attributes() <> #ZIP_Attr_Error)
-                      SetFileAttributes(DestPath, FormatZIPAttributesForOS(*Archive\Attributes()))
+                      SetFileAttributes(DestPath, *Archive\Attributes())
                     EndIf
                   EndIf
                 EndIf
